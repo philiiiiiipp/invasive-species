@@ -6,4 +6,5 @@
 *.ear
 
 #eclipse metadata
+.settings/*
 .metadata/*

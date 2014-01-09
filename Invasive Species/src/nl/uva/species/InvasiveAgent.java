@@ -1,3 +1,4 @@
+package nl.uva.species;
 /*
 Authors: Majid Alkaee Taleghan, Mark Crowley, Thomas Dietterich
 Invasive Species Project
@@ -9,8 +10,6 @@ I used some of Brian Tanner's Sarsa agent code for the demo version of invasive 
 */
 
 import java.util.*;
-
-import nl.uva.species.utils.Utilities;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.rlcommunity.rlglue.codec.AgentInterface;

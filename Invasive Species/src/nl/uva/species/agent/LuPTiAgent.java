@@ -1,4 +1,4 @@
-package nl.uva.species;
+package nl.uva.species.agent;
 
 import org.rlcommunity.rlglue.codec.AgentInterface;
 import org.rlcommunity.rlglue.codec.taskspec.TaskSpec;

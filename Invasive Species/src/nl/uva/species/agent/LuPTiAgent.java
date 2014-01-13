@@ -1,4 +1,4 @@
-package nl.uva.species;
+package nl.uva.species.agent;
 
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;

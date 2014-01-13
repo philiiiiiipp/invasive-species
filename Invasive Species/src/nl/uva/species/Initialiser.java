@@ -1,19 +1,16 @@
 package nl.uva.species;
 
-import java.io.IOException;
-
 import nl.uva.species.utils.Console;
 
 public class Initialiser {
 
-    public static void main(String[] args) {
-        final Console console = new Console("python src/InvasiveEnvironment.py");
+	public static void main(final String[] args) {
+		final Console console = new Console("/bin/sh", "a.sh");
 
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException ex) {
-            ex.printStackTrace();
-        }
-    }
-
+		try {
+			Thread.sleep(10000);
+		} catch (InterruptedException ex) {
+			ex.printStackTrace();
+		}
+	}
 }

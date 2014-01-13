@@ -17,38 +17,38 @@ import java.util.*;
 
 public class Utilities {
     //tamarisk
-    static final int Tam = 1;
+    public static final int Tam = 1;
     //native
-    static final int Nat = 2;
+    public static final int Nat = 2;
     //empty
-    static final int Emp = 3;
+    public static final int Emp = 3;
     //a character that represents each slot occupancy
     //empty
-    static final char Emp_Sym = 'E';
+    public static final char Emp_Sym = 'E';
     //tamarisk
-    static final char Tam_Sym = 'T';
+    public static final char Tam_Sym = 'T';
     //native
-    static final char Nat_Sym = 'N';
+    public static final char Nat_Sym = 'N';
 
     //different actions
     //nothing
-    static final int Not = 1;
+    public static final int Not = 1;
     //eradication
-    static final int Erad = 2;
+    public static final int Erad = 2;
     //restoration
-    static final int Res = 3;
+    public static final int Res = 3;
     //eradication+restoration
-    static final int EradRes = 4;
+    public static final int EradRes = 4;
 
     //a character that represents the action
     //nothing
-    static final char Not_Sym = 'N';
+    public static final char Not_Sym = 'N';
     //eradication
-    static final char Erad_Sym = 'E';
+    public static final char Erad_Sym = 'E';
     //restoration
-    static final char Res_Sym = 'R';
+    public static final char Res_Sym = 'R';
     //eradication+restoration
-    static final char EradRes_Sym = 'S';
+    public static final char EradRes_Sym = 'S';
 
     //A map to translate the array state representation to a number.
     static Map<List<Integer>, Integer> sMap = new HashMap<List<Integer>, Integer>();

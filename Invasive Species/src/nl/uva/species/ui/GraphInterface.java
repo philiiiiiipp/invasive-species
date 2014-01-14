@@ -10,6 +10,7 @@ import javax.swing.JFrame;
 import nl.uva.species.model.Reach;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
+import nl.uva.species.utils.Utilities;
 
 import org.jgrapht.ListenableGraph;
 import org.jgrapht.ext.JGraphXAdapter;
@@ -33,6 +34,8 @@ public class GraphInterface extends JApplet {
 			RelationshipEdge.class);
 
 	private RiverState mRiverState;
+
+	private int[] mActions = null;
 
 	/**
 	 * Generate a Graph, filled with test data
@@ -83,6 +86,47 @@ public class GraphInterface extends JApplet {
 
 		mxHierarchicalLayout layout = new mxHierarchicalLayout(mJgAdapter);
 		layout.execute(mJgAdapter.getDefaultParent());
+	}
+
+	/**
+	 * Show all given actions in the graph.
+	 * 
+	 * @see GraphInterface#removeActions
+	 * 
+	 * @param actions
+	 */
+	public void showActions(final int[] actions) {
+		if (mActions != null)
+			removeActions();
+
+		mActions = actions;
+
+		for (int i = 0; i < actions.length; ++i) {
+			String vertex = generateActionName(i, actions[i]);
+
+			mGraph.addVertex(vertex);
+
+			RelationshipEdge<String> relEdge = new RelationshipEdge<String>(generateName(i), vertex, "Action");
+
+			mGraph.addEdge(generateName(i), vertex, relEdge);
+		}
+
+		mxHierarchicalLayout layout = new mxHierarchicalLayout(mJgAdapter);
+		layout.execute(mJgAdapter.getDefaultParent());
+		this.repaint();
+	}
+
+	/**
+	 * Remove all showed actions
+	 */
+	public void removeActions() {
+		for (int i = 0; i < mActions.length; ++i) {
+			mGraph.removeEdge(generateName(i), generateActionName(i, mActions[i]));
+			mGraph.removeVertex(generateActionName(i, mActions[i]));
+		}
+
+		mActions = null;
+		this.repaint();
 	}
 
 	/**
@@ -158,6 +202,31 @@ public class GraphInterface extends JApplet {
 	 */
 	private String generateName(final int node) {
 		return "(       " + node + "       )";
+	}
+
+	/**
+	 * Generate a string representation of the action
+	 * 
+	 * @param reachID
+	 * @param actionNum
+	 * @return The String representation of the action
+	 */
+	private String generateActionName(final int reachID, final int actionNum) {
+		switch (actionNum) {
+		case Utilities.Not:
+			return reachID + ": " + "Nothing";
+
+		case Utilities.Erad:
+			return reachID + ": " + "Eradicate";
+
+		case Utilities.Res:
+			return reachID + ": " + "Restore";
+
+		case Utilities.EradRes:
+			return reachID + ": " + "Erad+Rest";
+		default:
+			return "Don't send invalid Actions!";
+		}
 	}
 
 	/**

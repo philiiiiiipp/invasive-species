@@ -276,6 +276,7 @@ public class EnvModel {
      */
     public double getReward(final RiverState state, final Action actions) {
         double reward = 0;
+        double actionCost = 0;
         final int numReaches = mRiver.getNumReaches();
 
         // Calculate the cost for every reach
@@ -293,17 +294,34 @@ public class EnvModel {
             // Subtract the cost of the actions performed
             switch (action) {
             case Utilities.ACTION_ERADICATE:
+                if (reach.getHabitatsInvaded() == 0) {
+                    // Can't eradicate a reach without Tamarisk plants
+                    return mRiver.getPenalty();
+                }
                 reward -= (mCostEradicate + mCostVariableEradicate * reach.getHabitatsInvaded());
                 break;
 
             case Utilities.ACTION_RESTORE:
+                if (reach.getHabitatsEmpty() == 0) {
+                    // Can't restore a reach without empty habitats
+                    return mRiver.getPenalty();
+                }
                 reward -= (mCostRestorate + mCostVariableRestorate * reach.getHabitatsEmpty());
                 break;
 
             case Utilities.ACTION_ERADICATE_RESTORE:
+                if (reach.getHabitatsInvaded() == 0) {
+                    // Can't eradicate a reach without Tamarisk plants
+                    return mRiver.getPenalty();
+                }
                 reward -= (mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded());
                 break;
             }
+        }
+
+        // Penalty for crossing the budget
+        if (actionCost > mRiver.getBudget()) {
+            return mRiver.getPenalty();
         }
 
         return reward;

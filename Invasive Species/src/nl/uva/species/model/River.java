@@ -18,6 +18,12 @@ public class River {
     /** The amount of habitats per reach */
     private final int mReachSize;
 
+    /** The budget for actions per time step */
+    private final double mBudget;
+
+    /** The penalty of performing a bad action */
+    private final double mPenalty;
+
     /** The mapping from parent to child reaches using indices */
     private final HashMap<Integer, Set<Integer>> mStructure = new HashMap<>();
 
@@ -37,9 +43,11 @@ public class River {
         final String extraString = taskSpec.getExtraString();
         mReachSize = taskSpec.getNumDiscreteObsDims() / taskSpec.getNumDiscreteActionDims();
 
+        final int budgetIndex = extraString.indexOf(" BUDGET ");
+
         // Parse the edges to determine the river's structure
         int rootNode = -1;
-        final String edgeString = extraString.substring(0, extraString.indexOf(" BUDGET"));
+        final String edgeString = extraString.substring(0, budgetIndex);
         final Matcher matcher = Pattern.compile("\\((\\d+), ?(\\d+)\\)").matcher(edgeString);
         while (matcher.find()) {
             final int left = Integer.parseInt(matcher.group(1));
@@ -56,6 +64,10 @@ public class River {
                 rootNode = right;
             }
         }
+
+        mBudget = Double.parseDouble(extraString.substring(budgetIndex, extraString.indexOf(" by ")));
+
+        mPenalty = taskSpec.getRewardRange().getMin();
 
         mRootNode = rootNode;
 
@@ -83,6 +95,24 @@ public class River {
      */
     public HashMap<Integer, Set<Integer>> getStructure() {
         return mStructure;
+    }
+
+    /**
+     * Retrieves the budget for actions per time step.
+     * 
+     * @return The budget
+     */
+    public double getBudget() {
+        return mBudget;
+    }
+
+    /**
+     * Retrieves the penalty of performing a bad action.
+     * 
+     * @return The penalty
+     */
+    public double getPenalty() {
+        return mPenalty;
     }
 
     /**

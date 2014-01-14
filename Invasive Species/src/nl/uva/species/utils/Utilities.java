@@ -19,11 +19,11 @@ public class Utilities {
     
     public static final Random RNG = new Random();
     //tamarisk
-    public static final int Tam = 1;
+    public static final int HABITAT_INVADED = 1;
     //native
-    public static final int Nat = 2;
+    public static final int HABITAT_NATIVE = 2;
     //empty
-    public static final int Emp = 3;
+    public static final int HABITAT_EMPTY = 3;
     //a character that represents each slot occupancy
     //empty
     public static final char Emp_Sym = 'E';
@@ -34,13 +34,13 @@ public class Utilities {
 
     //different actions
     //nothing
-    public static final int Not = 1;
+    public static final int ACTION_NOTHING = 1;
     //eradication
-    public static final int Erad = 2;
+    public static final int ACTION_ERADICATE = 2;
     //restoration
-    public static final int Res = 3;
+    public static final int ACTION_RESTORE = 3;
     //eradication+restoration
-    public static final int EradRes = 4;
+    public static final int ACTION_ERADICATE_RESTORE = 4;
 
     //a character that represents the action
     //nothing
@@ -97,18 +97,18 @@ public class Utilities {
         for (int r = 0; r < nbrReaches; r++) {
             int[] S_reach = Arrays.copyOfRange(state, r * habitatSize, (r + 1) * habitatSize);
 
-            if (sum(equals(S_reach, Utilities.Nat)) == habitatSize) {
-                action.add(r, new Integer[]{Utilities.Not});
-            } else if (sum(equals(S_reach, Utilities.Tam)) == 0) {
-                action.add(r, new Integer[]{Utilities.Not, Utilities.Res});
-            } else if (sum(equals(S_reach, Utilities.Tam)) == habitatSize) {
-                action.add(r, new Integer[]{Utilities.Not, Utilities.Erad, Utilities.EradRes});
-            } else if (sum(equals(S_reach, Utilities.Emp)) == habitatSize) {
-                action.add(r, new Integer[]{Utilities.Not, Utilities.Res});
-            } else if (sum(equals(S_reach, Utilities.Emp)) == 0) {//N or T
-                action.add(r, new Integer[]{Utilities.Not, Utilities.Erad, Utilities.EradRes});
+            if (sum(equals(S_reach, Utilities.HABITAT_NATIVE)) == habitatSize) {
+                action.add(r, new Integer[]{Utilities.ACTION_NOTHING});
+            } else if (sum(equals(S_reach, Utilities.HABITAT_INVADED)) == 0) {
+                action.add(r, new Integer[]{Utilities.ACTION_NOTHING, Utilities.ACTION_RESTORE});
+            } else if (sum(equals(S_reach, Utilities.HABITAT_INVADED)) == habitatSize) {
+                action.add(r, new Integer[]{Utilities.ACTION_NOTHING, Utilities.ACTION_ERADICATE, Utilities.ACTION_ERADICATE_RESTORE});
+            } else if (sum(equals(S_reach, Utilities.HABITAT_EMPTY)) == habitatSize) {
+                action.add(r, new Integer[]{Utilities.ACTION_NOTHING, Utilities.ACTION_RESTORE});
+            } else if (sum(equals(S_reach, Utilities.HABITAT_EMPTY)) == 0) {//N or T
+                action.add(r, new Integer[]{Utilities.ACTION_NOTHING, Utilities.ACTION_ERADICATE, Utilities.ACTION_ERADICATE_RESTORE});
             } else {
-                action.add(r, new Integer[]{Utilities.Not, Utilities.Erad, Utilities.Res, Utilities.EradRes});
+                action.add(r, new Integer[]{Utilities.ACTION_NOTHING, Utilities.ACTION_ERADICATE, Utilities.ACTION_RESTORE, Utilities.ACTION_ERADICATE_RESTORE});
             }
         }
         List<List<Integer>> actions = new ArrayList<List<Integer>>();

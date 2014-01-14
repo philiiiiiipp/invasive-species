@@ -26,7 +26,7 @@ public class Reach {
     private final int mHabitatsInvaded;
 
     /** The amount of habitats containing natural plants in this reach */
-    private final int mHabitatsNatural;
+    private final int mHabitatsNative;
 
     /** The amount of empty habitats in this reach */
     private final int mHabitatsEmpty;
@@ -51,24 +51,24 @@ public class Reach {
         mHabitats = habitats;
 
         int habitatsInvaded = 0;
-        int habitatsNatural = 0;
+        int habitatsNative = 0;
         int habitatsEmpty = 0;
         for (int i = 0; i < habitats.length; ++i) {
             switch (habitats[i]) {
-            case Utilities.Tam:
+            case Utilities.HABITAT_INVADED:
                 ++habitatsInvaded;
                 break;
-            case Utilities.Nat:
-                ++habitatsNatural;
+            case Utilities.HABITAT_NATIVE:
+                ++habitatsNative;
                 break;
-            case Utilities.Emp:
+            case Utilities.HABITAT_EMPTY:
                 ++habitatsEmpty;
                 break;
             }
         }
 
         mHabitatsInvaded = habitatsInvaded;
-        mHabitatsNatural = habitatsNatural;
+        mHabitatsNative = habitatsNative;
         mHabitatsEmpty = habitatsEmpty;
 
         // Inform the parent that it has a child
@@ -123,6 +123,11 @@ public class Reach {
         mChildren.add(reach);
     }
 
+    /**
+     * Retrieves the habitats within the reach.
+     * 
+     * @return The reach's habitats
+     */
     public int[] getHabitats() {
         return mHabitats;
     }
@@ -142,7 +147,7 @@ public class Reach {
      * @return The amount of natural habitats
      */
     public int getHabitatsNative() {
-        return mHabitatsNatural;
+        return mHabitatsNative;
     }
 
     /**

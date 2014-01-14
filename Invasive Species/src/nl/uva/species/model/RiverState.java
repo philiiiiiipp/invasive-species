@@ -1,11 +1,9 @@
 package nl.uva.species.model;
 
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
-import nl.uva.species.utils.Utilities;
-
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import org.rlcommunity.rlglue.codec.types.Observation;
 
 /**
@@ -20,7 +18,7 @@ public class RiverState {
     private final Observation mObservation;
 
     /** The reaches within this state */
-    private final Set<Reach> mReaches = new HashSet<>();
+    private final Map<Integer, Reach> mReaches = new HashMap<>();
 
     /** The root reach that all other reaches stream into */
     private final Reach mRootReach;
@@ -58,7 +56,7 @@ public class RiverState {
         // Create the reach object and add it to the set of reaches
         final Reach reach = new Reach(index, parent, Arrays.copyOfRange(mObservation.intArray, startPosition,
                 startPosition + reachSize));
-        mReaches.add(reach);
+        mReaches.put(index, reach);
 
         // Generate the reach's children
         if (mRiver.getStructure().containsKey(index)) {
@@ -93,8 +91,8 @@ public class RiverState {
      * 
      * @return The state's reaches
      */
-    public Set<Reach> getReaches() {
-        return mReaches;
+    public Collection<Reach> getReaches() {
+        return mReaches.values();
     }
 
     /**
@@ -104,5 +102,17 @@ public class RiverState {
      */
     public Reach getRootReach() {
         return mRootReach;
+    }
+
+    /**
+     * Retrieves the reach corresponding to the given index.
+     * 
+     * @param index
+     *            The index of the reach
+     * 
+     * @return The reach with the given index
+     */
+    public Reach getReach(final int index) {
+        return mReaches.get(index);
     }
 }

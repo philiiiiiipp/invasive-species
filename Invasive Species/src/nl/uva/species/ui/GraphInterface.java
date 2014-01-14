@@ -191,7 +191,7 @@ public class GraphInterface extends JApplet {
 	 * @return A String representation of the habitat
 	 */
 	private String generateHabitat(final Reach reach) {
-		return "T: " + reach.getHabitatsInvaded() + " N: " + reach.getHabitatsNatural();
+		return "T: " + reach.getHabitatsInvaded() + " N: " + reach.getHabitatsNative();
 	}
 
 	/**

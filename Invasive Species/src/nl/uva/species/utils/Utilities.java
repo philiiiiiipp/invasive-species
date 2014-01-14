@@ -16,6 +16,8 @@ import java.util.*;
  **/
 
 public class Utilities {
+    
+    public static final Random RNG = new Random();
     //tamarisk
     public static final int Tam = 1;
     //native

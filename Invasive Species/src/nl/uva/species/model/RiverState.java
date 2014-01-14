@@ -1,5 +1,6 @@
 package nl.uva.species.model;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -12,112 +13,96 @@ import org.rlcommunity.rlglue.codec.types.Observation;
  */
 public class RiverState {
 
-	/** The river defining the structure */
-	private final River mRiver;
+    /** The river defining the structure */
+    private final River mRiver;
 
-	/** The observation used for this state */
-	private final Observation mObservation;
+    /** The observation used for this state */
+    private final Observation mObservation;
 
-	/** The reaches within this state */
-	private final Set<Reach> mReaches = new HashSet<>();
+    /** The reaches within this state */
+    private final Set<Reach> mReaches = new HashSet<>();
 
-	/** The root reach that all other reaches stream into */
-	private final Reach mRootReach;
+    /** The root reach that all other reaches stream into */
+    private final Reach mRootReach;
 
-	/**
-	 * Prepares a new river state based on the base structure and observation.
-	 * 
-	 * @param river
-	 *            The river to use as base structure
-	 * @param observation
-	 *            The observation for this state
-	 */
-	public RiverState(final River river, final Observation observation) {
-		mRiver = river;
-		mObservation = observation;
+    /**
+     * Prepares a new river state based on the base structure and observation.
+     * 
+     * @param river
+     *            The river to use as base structure
+     * @param observation
+     *            The observation for this state
+     */
+    public RiverState(final River river, final Observation observation) {
+        mRiver = river;
+        mObservation = observation;
 
-		mRootReach = generateReachAt(river.getRootIndex(), null);
-	}
+        mRootReach = generateReachAt(river.getRootIndex(), null);
+    }
 
-	/**
-	 * Recursively creates and maps the reaches that belong in the state. Should not be called more than once.
-	 * 
-	 * @param index
-	 *            The index of the reach to generate
-	 * @param parent
-	 *            The reach's parent in the river structure
-	 * 
-	 * @return The reach that was generated
-	 */
-	private Reach generateReachAt(final int index, final Reach parent) {
-		final int reachSize = mRiver.getReachSize();
-		final int startPosition = reachSize * index;
-		int habitatsInvaded = 0;
-		int habitatsNatural = 0;
-		int habitatsEmpty = 0;
+    /**
+     * Recursively creates and maps the reaches that belong in the state. Should not be called more
+     * than once.
+     * 
+     * @param index
+     *            The index of the reach to generate
+     * @param parent
+     *            The reach's parent in the river structure
+     * 
+     * @return The reach that was generated
+     */
+    private Reach generateReachAt(final int index, final Reach parent) {
+        final int reachSize = mRiver.getReachSize();
+        final int startPosition = reachSize * index;
 
-		// Count the amount of trees in each category
-		for (int i = 0; i < reachSize; ++i) {
-			switch (mObservation.intArray[startPosition + i]) {
-			case Utilities.Tam:
-				++habitatsInvaded;
-				break;
-			case Utilities.Nat:
-				++habitatsNatural;
-				break;
-			case Utilities.Emp:
-				++habitatsEmpty;
-				break;
-			}
-		}
+        // Create the reach object and add it to the set of reaches
+        final Reach reach = new Reach(index, parent, Arrays.copyOfRange(mObservation.intArray, startPosition,
+                startPosition + reachSize));
+        mReaches.add(reach);
 
-		// Create the reach object and add it to the set of reaches
-		final Reach reach = new Reach(index, parent, habitatsInvaded, habitatsNatural, habitatsEmpty);
-		mReaches.add(reach);
+        // Generate the reach's children
+        if (mRiver.getStructure().containsKey(index)) {
+            for (final int childIndex : mRiver.getStructure().get(index)) {
+                generateReachAt(childIndex, reach);
+            }
+        }
 
-		// Generate the reach's children
-		if (mRiver.getStructure().containsKey(index)) {
-			for (final int childIndex : mRiver.getStructure().get(index)) {
-				generateReachAt(childIndex, reach);
-			}
-		}
+        return reach;
+    }
 
-		return reach;
-	}
+    /**
+     * Retrieves the river that this state was based on.
+     * 
+     * @return The state's river
+     */
+    public River getRiver() {
+        return mRiver;
+    }
 
-	/**
-	 * Retrieves the river that this state was based on.
-	 * 
-	 * @return The state's river
-	 */
-	public River getRiver() {
-		return mRiver;
-	}
+    /**
+     * Retrieves the observation that this state was based on.
+     * 
+     * @return The state's observation
+     */
+    public Observation getObservation() {
+        return mObservation;
+    }
 
-	/**
-	 * Retrieves the observation that this state was based on.
-	 * 
-	 * @return The state's observation
-	 */
-	public Observation getObservation() {
-		return mObservation;
-	}
+    /**
+     * Retrieves all reaches within this state.
+     * 
+     * @return The state's reaches
+     */
+    public Set<Reach> getReaches() {
+        return mReaches;
+    }
 
-	/**
-	 * Retrieves all reaches within this state.
-	 * 
-	 * @return The state's reaches
-	 */
-	public Set<Reach> getReaches() {
-		return mReaches;
-	}
-
-	/**
-	 * Retrieves the root reach that all other reaches flow into
-	 * 
-	 * @return The state's root reach
-	 */
-	public Reach getRootReach() {
-		return mRootReach;
-	}
+    /**
+     * Retrieves the root reach that all other reaches flow into
+     * 
+     * @return The state's root reach
+     */
+    public Reach getRootReach() {
+        return mRootReach;
+    }
 }

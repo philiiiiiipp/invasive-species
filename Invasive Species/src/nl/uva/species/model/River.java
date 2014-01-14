@@ -101,6 +101,10 @@ public class River {
 	public int getRootIndex() {
 		return mRootIndex;
 	}
+	
+	public int getNumReaches() {
+	    return mRootNode;
+	}
 
 	/**
 	 * Retrieves the index of the root node, the node the water flows trough wards

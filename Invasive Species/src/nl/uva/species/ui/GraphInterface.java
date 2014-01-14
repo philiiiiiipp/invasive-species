@@ -252,6 +252,7 @@ public class GraphInterface extends JApplet {
 	 * 
 	 * @return A dummy RiverState object
 	 */
+	@SuppressWarnings("unused")
 	private static RiverState generateTestData2() {
 
 		River river = new River(

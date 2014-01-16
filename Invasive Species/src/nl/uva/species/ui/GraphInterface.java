@@ -213,16 +213,16 @@ public class GraphInterface extends JApplet {
 	 */
 	private String generateActionName(final int reachID, final int actionNum) {
 		switch (actionNum) {
-		case Utilities.Not:
+		case Utilities.ACTION_NOTHING:
 			return reachID + ": " + "Nothing";
 
-		case Utilities.Erad:
+		case Utilities.ACTION_ERADICATE:
 			return reachID + ": " + "Eradicate";
 
-		case Utilities.Res:
+		case Utilities.ACTION_RESTORE:
 			return reachID + ": " + "Restore";
 
-		case Utilities.EradRes:
+		case Utilities.ACTION_ERADICATE_RESTORE:
 			return reachID + ": " + "Erad+Rest";
 		default:
 			return "Don't send invalid Actions!";

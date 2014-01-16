@@ -2,9 +2,12 @@ package nl.uva.species.agent;
 
 import java.util.Arrays;
 
+import javax.swing.JFrame;
+
 import nl.uva.species.model.EnvModel;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
+import nl.uva.species.ui.GraphInterface;
 import nl.uva.species.utils.Utilities;
 
 import org.rlcommunity.rlglue.codec.AgentInterface;
@@ -47,14 +50,34 @@ public class LuPTiAgent implements AgentInterface {
     public Action agent_start(final Observation observation) {
 
         Action defaultAction = new Action();
-        Arrays.fill(defaultAction.intArray, Utilities.Not);
+        defaultAction.intArray = new int[7];
+        Arrays.fill(defaultAction.intArray, Utilities.ACTION_ERADICATE_RESTORE);
 
         EnvModel model = new EnvModel(river);
         RiverState state = new RiverState(river, observation);
+        
+
+        GraphInterface applet = new GraphInterface(state);
+        applet.init();
+
+        JFrame frame = new JFrame();
+        frame.getContentPane().add(applet);
+        frame.setTitle("The invasive species domain");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.pack();
+        frame.setVisible(true);
 
         boolean loop = true;
         while (loop) {
             state = model.getPossibleNextState(state, defaultAction);
+            applet.update(state);
+            
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException ex) {
+                // TODO Auto-generated catch block
+                ex.printStackTrace();
+            }
         }
 
         // System.out.println("Agent_Start: " + observation.intArray.length);
@@ -63,22 +86,22 @@ public class LuPTiAgent implements AgentInterface {
         Action returnAction = new Action();
 
         for (int i = 0; i < 7; ++i) {
-            theState[i] = Utilities.Not;
+            theState[i] = Utilities.ACTION_NOTHING;
             int tam = 0;
             int empty = 0;
 
             for (int j = 0; j < 4; ++j) {
-                if (observation.intArray[i * 4 + j] == Utilities.Tam) {
+                if (observation.intArray[i * 4 + j] == Utilities.HABITAT_INVADED) {
                     ++tam;
                 }
-                if (observation.intArray[i * 4 + j] == Utilities.Emp) {
+                if (observation.intArray[i * 4 + j] == Utilities.HABITAT_EMPTY) {
                     ++empty;
                 }
             }
             if (tam >= 1) {
-                theState[i] = Utilities.EradRes;
+                theState[i] = Utilities.ACTION_ERADICATE_RESTORE;
             } else if (empty >= 1) {
-                theState[i] = Utilities.Res;
+                theState[i] = Utilities.ACTION_RESTORE;
             }
         }
 

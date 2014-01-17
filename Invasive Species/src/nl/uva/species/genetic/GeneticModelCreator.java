@@ -145,6 +145,8 @@ public class GeneticModelCreator {
 		gaConf.setPreservFittestIndividual(true);
 		gaConf.setKeepPopulationSizeConstant(false);
 
+		g.getBestModel(river);
+
 		Genotype genotype = null;
 
 		try {

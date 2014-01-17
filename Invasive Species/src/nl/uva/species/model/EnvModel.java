@@ -611,7 +611,7 @@ public class EnvModel {
 		}
 
 		// Compare the expected habitats to the actual returned ones
-		for (final Reach reach : state.getReaches()) {
+		for (final Reach reach : resultState.getReaches()) {
 			final int reachIndex = reach.getIndex();
 
 			final int[] habitats = reach.getHabitats();

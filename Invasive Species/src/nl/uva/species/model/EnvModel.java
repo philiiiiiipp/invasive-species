@@ -103,7 +103,7 @@ public class EnvModel {
      */
     public RiverState getPossibleNextState(final RiverState state, final Action actions) {
         final int reachSize = mRiver.getReachSize();
-        final int[] newHabitats = new int[state.getReaches().size() * reachSize];
+        final int[] newHabitats = new int[mRiver.getNumReaches() * reachSize];
 
         // Perform the action on the different reaches
         for (final Reach reach : state.getReaches()) {
@@ -199,7 +199,7 @@ public class EnvModel {
         newObservation.intArray = newHabitats;
         final RiverState newState = new RiverState(state.getRiver(), newObservation);
 
-        final boolean exegenousActivated = isExegenousActivated();
+        final boolean exogenousActivated = isexogenousActivated();
 
         // Germination of empty habitats
         for (final Reach reach : newState.getReaches()) {
@@ -212,8 +212,8 @@ public class EnvModel {
 
             final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
 
-            final double exoTamariskWeight = (exegenousActivated ? mExoToEndoRatio[index] * mExoTamarisk[index] : 0);
-            final double exoNativeWeight = (exegenousActivated ? mExoToEndoRatio[index] * (1 - mExoTamarisk[index]) : 0);
+            final double exoTamariskWeight = (exogenousActivated ? mExoToEndoRatio[index] * mExoTamarisk[index] : 0);
+            final double exoNativeWeight = (exogenousActivated ? mExoToEndoRatio[index] * (1 - mExoTamarisk[index]) : 0);
 
             final double endoTamarisWeight = endoToExoRatio * mEndoTamarisk;
             final double endoNativeWeight = endoToExoRatio * (1 - mEndoTamarisk);
@@ -405,6 +405,216 @@ public class EnvModel {
     }
 
     /**
+     * Compares the resulting state to how the model would predict it and returns a score based on
+     * how much they correlate.
+     * 
+     * @param state
+     *            The starting state
+     * @param actions
+     *            The action to perform
+     * @param resultState
+     *            The actual resulting state after performing the actions
+     * 
+     * @return A score representing the correlation between model's expectation and the actual
+     *         outcome
+     */
+    public double evaluateModel(final RiverState state, final Action actions, final RiverState resultState) {
+        double reward = 0;
+        final int reachSize = mRiver.getReachSize();
+        final int numReaches = mRiver.getNumReaches();
+        final int numHabitats = numReaches * reachSize;
+        final double[] habitatsInvaded = new double[numHabitats];
+        final double[] habitatsNative = new double[numHabitats];
+        final double[] habitatsEmpty = new double[numHabitats];
+        final double[] reachesInvaded = new double[numReaches];
+        final double[] reachesNative = new double[numReaches];
+        final double[] reachesEmpty = new double[numReaches];
+
+        // Perform the action on the different reaches
+        for (final Reach reach : state.getReaches()) {
+            final int reachIndex = reach.getIndex();
+            final int[] habitats = reach.getHabitats();
+
+            final int action = actions.intArray[reachIndex];
+
+            for (int i = 0; i < habitats.length; ++i) {
+                double habitatInvaded = 0;
+                double habitatNative = 0;
+                double habitatEmpty = 0;
+
+                // Perform action on each habitat in reach
+                switch (action) {
+                case Utilities.ACTION_ERADICATE:
+                    // During eradication, both type of plants may die
+                    switch (habitats[i]) {
+                    case Utilities.HABITAT_NATIVE:
+                        habitatNative = 1 - mDeathRateNative;
+                        habitatEmpty = mDeathRateNative;
+                        break;
+                    case Utilities.HABITAT_INVADED:
+                        habitatInvaded = 1 - mEradicationRate;
+                        habitatEmpty = mEradicationRate;
+                        break;
+                    }
+
+                    break;
+
+                case Utilities.ACTION_RESTORE:
+                    // During restoration, empty spaces may come to life and plants may die
+                    switch (habitats[i]) {
+                    case Utilities.HABITAT_EMPTY:
+                        habitatNative = mRestorationRate;
+                        habitatEmpty = 1 - mRestorationRate;
+                        break;
+                    case Utilities.HABITAT_NATIVE:
+                        habitatNative = 1 - mDeathRateNative;
+                        habitatEmpty = mDeathRateNative;
+                        break;
+                    case Utilities.HABITAT_INVADED:
+                        habitatInvaded = 1 - mDeathRateTamarisk;
+                        habitatEmpty = mDeathRateTamarisk;
+                        break;
+                    }
+                    break;
+
+                case Utilities.ACTION_ERADICATE_RESTORE:
+                    // During eradication, invaded habitats may die and/or come to life and native
+                    // species may die
+                    switch (habitats[i]) {
+                    case Utilities.HABITAT_NATIVE:
+                        habitatNative = 1 - mDeathRateNative;
+                        habitatEmpty = mDeathRateNative;
+                        break;
+                    case Utilities.HABITAT_INVADED:
+                        habitatEmpty = mEradicationRate * (1 - mRestorationRate);
+                        habitatNative = mEradicationRate * mRestorationRate;
+                        habitatInvaded = 1 - mEradicationRate;
+                        break;
+                    }
+                    break;
+
+                case Utilities.ACTION_NOTHING:
+                    // When doing nothing, both type of plants may die
+                    switch (habitats[i]) {
+                    case Utilities.HABITAT_NATIVE:
+                        habitatNative = 1 - mDeathRateNative;
+                        habitatEmpty = mDeathRateNative;
+                        break;
+                    case Utilities.HABITAT_INVADED:
+                        habitatInvaded = 1 - mDeathRateTamarisk;
+                        habitatEmpty = mDeathRateTamarisk;
+                        break;
+                    }
+                }
+
+                // Update the habitats and reaches with the new values
+                final int habitatIndex = reach.getIndex() * reachSize + i;
+                habitatsInvaded[habitatIndex] = habitatInvaded;
+                habitatsNative[habitatIndex] = habitatNative;
+                habitatsEmpty[habitatIndex] = habitatEmpty;
+
+                reachesInvaded[reachIndex] += habitatInvaded;
+                reachesNative[reachIndex] += habitatNative;
+                reachesEmpty[reachIndex] += habitatEmpty;
+            }
+        }
+
+        final boolean exogenousActivated = isexogenousActivated();
+
+        // Germination of empty habitats
+        for (final Reach reach : state.getReaches()) {
+            final int reachIndex = reach.getIndex();
+
+            // Skip full reaches
+            if (reachesEmpty[reachIndex] == 0) {
+                continue;
+            }
+
+            final int index = reach.getIndex();
+
+            final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
+
+            final double exoTamariskWeight = (exogenousActivated ? mExoToEndoRatio[index] * mExoTamarisk[index] : 0);
+            final double exoNativeWeight = (exogenousActivated ? mExoToEndoRatio[index] * (1 - mExoTamarisk[index]) : 0);
+
+            final double endoTamarisWeight = endoToExoRatio * mEndoTamarisk;
+            final double endoNativeWeight = endoToExoRatio * (1 - mEndoTamarisk);
+
+            // Calculate the reproduction scores for Tamarisk and native trees
+            double tamariskScore = reachesInvaded[reachIndex];
+            double nativeScore = reachesNative[reachIndex];
+            final Reach parent = reach.getParent();
+            if (parent != null) {
+                final int parentIndex = parent.getIndex();
+
+                // Add the parent's scores
+                tamariskScore += reachesInvaded[parentIndex] * Math.pow(mUpstreamRate, 2);
+                nativeScore += reachesNative[parentIndex] * Math.pow(mUpstreamRate, 2);
+
+                // Add the sibling's scores
+                final Set<Reach> siblings = parent.getChildren();
+                for (final Reach sibling : siblings) {
+                    if (sibling != reach) {
+                        final int siblingIndex = sibling.getIndex();
+                        tamariskScore += reachesInvaded[siblingIndex] * mUpstreamRate * mDownstreamRate;
+                        nativeScore += reachesNative[siblingIndex] * mUpstreamRate * mDownstreamRate;
+                    }
+                }
+            }
+            // Add the children's scores
+            final Set<Reach> children = reach.getChildren();
+            for (final Reach child : children) {
+                final int childIndex = child.getIndex();
+                tamariskScore += reachesInvaded[childIndex] * Math.pow(mDownstreamRate, 2);
+                nativeScore += reachesNative[childIndex] * Math.pow(mDownstreamRate, 2);
+            }
+
+            // Determine the chance of each plant and normalise
+            final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore / (5 * reachSize);
+            final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore / (5 * reachSize);
+            final double chanceSum = tamariskChance + nativeChance;
+
+            if (chanceSum > 0) {
+                final double tamariskChanceNorm = tamariskChance / chanceSum;
+
+                // Update the habitats with the new regrown tree
+                final int[] habitats = reach.getHabitats();
+                for (int i = 0; i < habitats.length; ++i) {
+                    final int habitatIndex = reachIndex * reachSize + i;
+                    habitatsInvaded[habitatIndex] += habitatsEmpty[habitatIndex] * tamariskChanceNorm;
+                    habitatsNative[habitatIndex] += habitatsEmpty[habitatIndex] * (1 - tamariskChanceNorm);
+                    habitatsEmpty[habitatIndex] = 0;
+                }
+            }
+        }
+
+        // Compare the expected habitats to the actual returned ones
+        for (final Reach reach : state.getReaches()) {
+            final int reachIndex = reach.getIndex();
+
+            final int[] habitats = reach.getHabitats();
+            for (int i = 0; i < habitats.length; ++i) {
+                final int habitatIndex = reachIndex * reachSize + i;
+
+                switch (habitats[i]) {
+                case Utilities.HABITAT_EMPTY:
+                    reward += habitatsEmpty[habitatIndex];
+                    break;
+                case Utilities.HABITAT_NATIVE:
+                    reward += habitatsNative[habitatIndex];
+                    break;
+                case Utilities.HABITAT_INVADED:
+                    reward += habitatsInvaded[habitatIndex];
+                    break;
+                }
+            }
+        }
+
+        // Return the normalised reward, based on the maximum score (1 per habitat)
+        return reward / numHabitats;
+    }
+
+    /**
      * Retrieve the reward for the transition from a state to the next with the given actions.
      * 
      * @param state
@@ -501,7 +711,7 @@ public class EnvModel {
      * 
      * @return True iff all reaches are purely endogenous
      */
-    public boolean isExegenousActivated() {
+    public boolean isexogenousActivated() {
         for (final double ratio : mExoToEndoRatio) {
             if (ratio < EXO_ACTIVATED_THRESHOLD) {
                 return true;

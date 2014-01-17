@@ -2,7 +2,7 @@ package nl.uva.species.genetic;
 
 import org.jgap.FitnessFunction;
 import org.jgap.IChromosome;
-import org.jgap.impl.BooleanGene;
+import org.jgap.impl.DoubleGene;
 
 public class MaxFunction extends FitnessFunction {
 	/** String containing the CVS revision. Read out via reflection! */
@@ -26,16 +26,15 @@ public class MaxFunction extends FitnessFunction {
 	 * @author Klaus Meffert
 	 * @since 2.0
 	 */
+	@Override
 	public double evaluate(final IChromosome a_subject) {
 		int total = 0;
 
 		for (int i = 0; i < a_subject.size(); i++) {
-			BooleanGene value = (BooleanGene) a_subject.getGene(a_subject.size() - (i + 1));
-			if (value.booleanValue()) {
-				total += Math.pow(2.0, i);
-			}
+			DoubleGene value = (DoubleGene) a_subject.getGene(a_subject.size() - (i + 1));
+			total += Math.log(value.doubleValue());
 		}
 
-		return total;
+		return Math.abs(total);
 	}
 }

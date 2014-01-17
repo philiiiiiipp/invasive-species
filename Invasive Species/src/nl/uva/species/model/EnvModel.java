@@ -99,7 +99,10 @@ public class EnvModel {
 		mRiver = river;
 
 		mEndoTamarisk = genes[Parameter.ENDO_TAMARISK.ordinal()].doubleValue();
-		mUpstreamRate = genes[Parameter.UPSTREAM_RATE.ordinal()].doubleValue();
+
+		// Should never exceed 0.5
+		mUpstreamRate = genes[Parameter.UPSTREAM_RATE.ordinal()].doubleValue() / 2;
+
 		mDownstreamRate = genes[Parameter.DOWNSTREAM_RATE.ordinal()].doubleValue();
 		mEradicationRate = genes[Parameter.ERADICATION_RATE.ordinal()].doubleValue();
 		mRestorationRate = genes[Parameter.RESTORATION_RATE.ordinal()].doubleValue();
@@ -107,6 +110,7 @@ public class EnvModel {
 		mDeathRateNative = genes[Parameter.DEATH_RATE_NATIVE.ordinal()].doubleValue();
 
 		mExoToEndoRatio = new double[river.getNumReaches()];
+		mExoTamarisk = new double[river.getNumReaches()];
 		for (int i = 0; i < river.getNumReaches(); ++i) {
 			mExoToEndoRatio[i] = genes[i + Parameter.values().length].doubleValue();
 			mExoTamarisk[i] = genes[i + river.getNumReaches() + Parameter.values().length].doubleValue();

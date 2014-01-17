@@ -6,6 +6,7 @@ import nl.uva.species.model.Reach;
 import nl.uva.species.model.RiverState;
 import nl.uva.species.utils.Utilities;
 
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.rlcommunity.rlglue.codec.types.Action;
 
 public class CostSolver {
@@ -38,7 +39,9 @@ public class CostSolver {
     private double mCostVariableEradicateRestorate;
     
     public CostSolver() {
-        
+        new Array2DRowRealMatrix();
     }
+ 
+    
     
 }

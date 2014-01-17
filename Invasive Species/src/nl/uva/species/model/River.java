@@ -24,6 +24,9 @@ public class River {
     /** The penalty of performing a bad action */
     private final double mPenalty;
 
+    /** The discount factor per timestep */
+    private final double mDiscountFactor;
+
     /** The mapping from parent to child reaches using indices */
     private final HashMap<Integer, Set<Integer>> mStructure = new HashMap<>();
 
@@ -43,7 +46,8 @@ public class River {
         final String extraString = taskSpec.getExtraString();
         mReachSize = taskSpec.getNumDiscreteObsDims() / taskSpec.getNumDiscreteActionDims();
 
-        final int budgetIndex = extraString.indexOf(" BUDGET ");
+        final String budgetSplit = " BUDGET ";
+        final int budgetIndex = extraString.indexOf(budgetSplit);
 
         // Parse the edges to determine the river's structure
         int rootNode = -1;
@@ -65,9 +69,11 @@ public class River {
             }
         }
 
-        mBudget = Double.parseDouble(extraString.substring(budgetIndex, extraString.indexOf(" by ")));
+        mBudget = Double.parseDouble(extraString.substring(budgetIndex + budgetSplit.length(), extraString.indexOf(" by ")));
 
         mPenalty = taskSpec.getRewardRange().getMin();
+
+        mDiscountFactor = taskSpec.getDiscountFactor();
 
         mRootNode = rootNode;
 
@@ -113,6 +119,15 @@ public class River {
      */
     public double getPenalty() {
         return mPenalty;
+    }
+
+    /**
+     * Retrieves the discount factor for each timestep.
+     * 
+     * @return The discount factor
+     */
+    public double getDiscountFactor() {
+        return mDiscountFactor;
     }
 
     /**

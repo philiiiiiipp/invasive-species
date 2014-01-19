@@ -746,7 +746,7 @@ public class EnvModel {
 	}
 
 	/**
-	 * Returns the normalized euclidean distance between this model an another
+	 * Returns the average euclidean distance between this model an another
 	 * 
 	 * @param second
 	 *            The model to be compared to

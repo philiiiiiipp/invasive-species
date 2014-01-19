@@ -34,7 +34,7 @@ public class GeneticModelCreatorTest {
 
 		GeneticModelCreator gModel = new GeneticModelCreator(testRiver);
 
-		int simulationSteps = 100;
+		int simulationSteps = 10;
 		gModel.addRiverState(oldState);
 		gModel.addRiverState(newState);
 		gModel.addAction(lastAction);

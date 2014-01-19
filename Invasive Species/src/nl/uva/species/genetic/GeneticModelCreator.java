@@ -31,6 +31,8 @@ public class GeneticModelCreator {
 	/** The standard population size */
 	public final int STANDARD_POP_SIZE = 500;
 
+	public final int STANDARD_EVOLUTIONS = 2;
+
 	private final Genotype mGenotype;
 
 	/**
@@ -40,7 +42,7 @@ public class GeneticModelCreator {
 	 *            The river as the basis of the model
 	 */
 	public GeneticModelCreator(final River river) {
-		mEvolutions = 5;
+		mEvolutions = STANDARD_EVOLUTIONS;
 		int geneNumber = EnvModel.Parameter.values().length + river.getNumReaches() * 2;
 		mGenotype = initialiseGenotype(STANDARD_POP_SIZE, river, geneNumber);
 	}

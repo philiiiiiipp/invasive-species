@@ -29,7 +29,7 @@ public class GeneticModelCreator {
 	private final int mEvolutions;
 
 	/** The standard population size */
-	public final int STANDARD_POP_SIZE = 200;
+	public final int STANDARD_POP_SIZE = 500;
 
 	private final Genotype mGenotype;
 
@@ -40,7 +40,7 @@ public class GeneticModelCreator {
 	 *            The river as the basis of the model
 	 */
 	public GeneticModelCreator(final River river) {
-		mEvolutions = 100;
+		mEvolutions = 5;
 		int geneNumber = EnvModel.Parameter.values().length + river.getNumReaches() * 2;
 		mGenotype = initialiseGenotype(STANDARD_POP_SIZE, river, geneNumber);
 	}
@@ -64,6 +64,7 @@ public class GeneticModelCreator {
 			gaConf.setAlwaysCaculateFitness(true);
 			gaConf.setSampleChromosome(sampleChromosome);
 			gaConf.setPopulationSize(populationSize);
+
 			gaConf.setFitnessFunction(new EvaluateModel(mStates, mActions, river));
 			genotype = Genotype.randomInitialGenotype(gaConf);
 		} catch (InvalidConfigurationException e) {
@@ -77,11 +78,13 @@ public class GeneticModelCreator {
 
 		for (int i = 0; i < mEvolutions; i++) {
 			mGenotype.evolve();
+			System.out.println(i + ": " + mGenotype.getFittestChromosome().getFitnessValue());
 		}
 		// Print summary.
 		// --------------
 		IChromosome fittest = mGenotype.getFittestChromosome();
 
+		System.out.println("== Fittest Cromosome ==");
 		int i = 1;
 		DecimalFormat df = new DecimalFormat("#.####");
 		for (Gene g : fittest.getGenes()) {

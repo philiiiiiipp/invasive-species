@@ -48,11 +48,11 @@ public class EnvModel {
 	/** Default value for each reach that there is exogenous germination */
 	private final double mDefaultExoToEndoRatio = 0.8;
 
-	/** The chance for each reach that there is exogenous germination as opposed to endogenous */
-	private double[] mExoToEndoRatio;
-
 	/** Default value for each reach that a Tamarisk plant grows from exogenous germination */
 	private final double mDefaultExoTamarisk = 0.7;
+
+	/** The chance for each reach that there is exogenous germination as opposed to endogenous */
+	private double[] mExoToEndoRatio;
 
 	/** The chance for each reach that a Tamarisk plant grows from exogenous germination */
 	private double[] mExoTamarisk;
@@ -745,4 +745,33 @@ public class EnvModel {
 		return false;
 	}
 
+	/**
+	 * Returns the normalized euclidean distance between this model an another
+	 * 
+	 * @param second
+	 *            The model to be compared to
+	 * @return The euclidean distance between 0-1;
+	 */
+	public double compareTo(final EnvModel second) {
+		double result = 0;
+
+		for (int i = 0; i < mExoToEndoRatio.length; ++i) {
+			result += Math.abs(mExoToEndoRatio[i] - second.mExoToEndoRatio[i]);
+		}
+
+		for (int i = 0; i < mExoTamarisk.length; ++i) {
+			result += Math.abs(mExoTamarisk[i] - second.mExoTamarisk[i]);
+		}
+
+		result += Math.abs(mEndoTamarisk - second.mEndoTamarisk);
+		result += Math.abs(mUpstreamRate - second.mUpstreamRate);
+		result += Math.abs(mDownstreamRate - second.mDownstreamRate);
+		result += Math.abs(mEradicationRate - second.mEradicationRate);
+		result += Math.abs(mRestorationRate - second.mRestorationRate);
+		result += Math.abs(mDeathRateTamarisk - second.mDeathRateTamarisk);
+		result += Math.abs(mDeathRateNative - second.mDeathRateNative);
+
+		int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length + 7;
+		return result / totalParameterCount;
+	}
 }

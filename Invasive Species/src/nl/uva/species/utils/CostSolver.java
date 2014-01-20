@@ -97,7 +97,7 @@ public class CostSolver {
             System.out.println("Fillposition: ");
             System.out.println(mFillPosition);
             mDataMatrix.setRowVector(mFillPosition, newDataRow);
-            mDataVector.setEntry(mFillPosition, reward);
+            mDataVector.setEntry(mFillPosition, -reward); // add the negative reward, which are the costs for the state/action pair
             mFillPosition++;
 
             // print out details about this round (observation/action/dataRow)

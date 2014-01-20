@@ -61,7 +61,7 @@ public class CostTestAgent implements AgentInterface {
     @Override
     public Action agent_start(final Observation observation) {
                 
-        System.out.println("START");
+        // System.out.println("START");
         
         Action defaultAction = new Action();
         defaultAction.intArray = new int[7];

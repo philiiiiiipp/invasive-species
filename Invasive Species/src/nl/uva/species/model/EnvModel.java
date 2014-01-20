@@ -83,16 +83,38 @@ public class EnvModel {
 	 * 
 	 * @param river
 	 *            The river to base the model on
+	 * @param randomlyInitialised
+	 *            If true all parameters get randomly initialized
 	 */
-	public EnvModel(final River river) {
+	public EnvModel(final River river, final boolean randomlyInitialised) {
 		mRiver = river;
 
-		// Set default values for vectors
-		mExoToEndoRatio = new double[river.getNumReaches()];
-		Arrays.fill(mExoToEndoRatio, mDefaultExoToEndoRatio);
+		if (randomlyInitialised) {
+			mEndoTamarisk = Utilities.RNG.nextDouble();
 
-		mExoTamarisk = new double[river.getNumReaches()];
-		Arrays.fill(mExoTamarisk, mDefaultExoTamarisk);
+			// Should never exceed 0.5
+			mUpstreamRate = Utilities.RNG.nextDouble() / 2;
+
+			mDownstreamRate = Utilities.RNG.nextDouble();
+			mEradicationRate = Utilities.RNG.nextDouble();
+			mRestorationRate = Utilities.RNG.nextDouble();
+			mDeathRateTamarisk = Utilities.RNG.nextDouble();
+			mDeathRateNative = Utilities.RNG.nextDouble();
+
+			mExoToEndoRatio = new double[river.getNumReaches()];
+			mExoTamarisk = new double[river.getNumReaches()];
+			for (int i = 0; i < river.getNumReaches(); ++i) {
+				mExoToEndoRatio[i] = Utilities.RNG.nextDouble();
+				mExoTamarisk[i] = Utilities.RNG.nextDouble();
+			}
+		} else {
+			// Set default values for vectors
+			mExoToEndoRatio = new double[river.getNumReaches()];
+			Arrays.fill(mExoToEndoRatio, mDefaultExoToEndoRatio);
+
+			mExoTamarisk = new double[river.getNumReaches()];
+			Arrays.fill(mExoTamarisk, mDefaultExoTamarisk);
+		}
 	}
 
 	public EnvModel(final River river, final DoubleGene[] genes) {
@@ -442,7 +464,8 @@ public class EnvModel {
 	 * @param resultState
 	 *            The actual resulting state after performing the actions
 	 * 
-	 * @return A score representing the correlation between model's expectation and the actual outcome
+	 * @return A score representing the correlation between model's expectation and the actual outcome where 1 is the
+	 *         highest and 0 the lowest
 	 */
 	public double evaluateModel(final RiverState state, final Action actions, final RiverState resultState) {
 		double reward = 0;

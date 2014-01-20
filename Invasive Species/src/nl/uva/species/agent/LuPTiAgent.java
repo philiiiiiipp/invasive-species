@@ -2,12 +2,7 @@ package nl.uva.species.agent;
 
 import java.util.Arrays;
 
-import javax.swing.JFrame;
-
-import nl.uva.species.model.EnvModel;
 import nl.uva.species.model.River;
-import nl.uva.species.model.RiverState;
-import nl.uva.species.ui.GraphInterface;
 import nl.uva.species.utils.Utilities;
 
 import org.rlcommunity.rlglue.codec.AgentInterface;
@@ -46,38 +41,43 @@ public class LuPTiAgent implements AgentInterface {
 		river = new River(theTaskSpec);
 	}
 
+	int print = 0;
+
 	@Override
 	public Action agent_start(final Observation observation) {
 
+		if (print > 1)
+			return null;
+
+		print++;
+
+		System.out.println("================ START =================");
 		Action defaultAction = new Action();
 		defaultAction.intArray = new int[7];
 		Arrays.fill(defaultAction.intArray, Utilities.ACTION_ERADICATE_RESTORE);
 
-		EnvModel model = new EnvModel(river);
-		RiverState state = new RiverState(river, observation);
+		// GraphInterface applet = new GraphInterface(state);
+		// applet.init();
+		//
+		// JFrame frame = new JFrame();
+		// frame.getContentPane().add(applet);
+		// frame.setTitle("The invasive species domain");
+		// frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		// frame.pack();
+		// frame.setVisible(true);
 
-		GraphInterface applet = new GraphInterface(state);
-		applet.init();
-
-		JFrame frame = new JFrame();
-		frame.getContentPane().add(applet);
-		frame.setTitle("The invasive species domain");
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.pack();
-		frame.setVisible(true);
-
-		boolean loop = false;
-		while (loop) {
-			state = model.getPossibleNextState(state, defaultAction);
-			applet.update(state);
-
-			try {
-				Thread.sleep(300);
-			} catch (InterruptedException ex) {
-				// TODO Auto-generated catch block
-				ex.printStackTrace();
-			}
-		}
+		// boolean loop = false;
+		// while (loop) {
+		// state = model.getPossibleNextState(state, defaultAction);
+		// applet.update(state);
+		//
+		// try {
+		// Thread.sleep(300);
+		// } catch (InterruptedException ex) {
+		// // TODO Auto-generated catch block
+		// ex.printStackTrace();
+		// }
+		// }
 
 		// System.out.println("Agent_Start: " + observation.intArray.length);
 
@@ -86,6 +86,11 @@ public class LuPTiAgent implements AgentInterface {
 
 		for (int i = 0; i < 7; ++i) {
 			theState[i] = Utilities.ACTION_NOTHING;
+
+			// make nothing with 30%
+			if (Utilities.RNG.nextDouble() > 0.7)
+				continue;
+
 			int tam = 0;
 			int empty = 0;
 
@@ -97,7 +102,7 @@ public class LuPTiAgent implements AgentInterface {
 					++empty;
 				}
 			}
-			if (tam >= 1) {
+			if (tam > 2) {
 				theState[i] = Utilities.ACTION_ERADICATE_RESTORE;
 			} else if (empty >= 1) {
 				theState[i] = Utilities.ACTION_RESTORE;
@@ -107,12 +112,12 @@ public class LuPTiAgent implements AgentInterface {
 		returnAction.intArray = theState;
 
 		System.out.println("o = new Observation();");
-		System.out.println("o.intArray = new int[] {");
+		System.out.print("o.intArray = new int[] {");
 		for (int i = 0; i < observation.intArray.length; ++i) {
 			if (i < observation.intArray.length - 1) {
-				System.out.print(i + ",");
+				System.out.print(observation.intArray[i] + ",");
 			} else {
-				System.out.println(i + "});");
+				System.out.println(observation.intArray[i] + "};");
 			}
 		}
 		System.out.println("g.addRiverState(new RiverState(river, o));");
@@ -122,7 +127,66 @@ public class LuPTiAgent implements AgentInterface {
 
 	@Override
 	public Action agent_step(final double reward, final Observation observation) {
-		return agent_start(observation);
+
+		Action defaultAction = new Action();
+		defaultAction.intArray = new int[7];
+		Arrays.fill(defaultAction.intArray, Utilities.ACTION_ERADICATE_RESTORE);
+
+		int[] theState = new int[7];
+		Action returnAction = new Action();
+
+		for (int i = 0; i < 7; ++i) {
+			theState[i] = Utilities.ACTION_NOTHING;
+
+			// make nothing with 30%
+			if (Utilities.RNG.nextDouble() > 0.7)
+				continue;
+
+			int tam = 0;
+			int empty = 0;
+
+			for (int j = 0; j < 4; ++j) {
+				if (observation.intArray[i * 4 + j] == Utilities.HABITAT_INVADED) {
+					++tam;
+				}
+				if (observation.intArray[i * 4 + j] == Utilities.HABITAT_EMPTY) {
+					++empty;
+				}
+			}
+			if (tam > 2) {
+				theState[i] = Utilities.ACTION_ERADICATE_RESTORE;
+			} else if (empty >= 1) {
+				theState[i] = Utilities.ACTION_RESTORE;
+			}
+		}
+
+		returnAction.intArray = theState;
+
+		System.out.println("o = new Observation();");
+		System.out.print("o.intArray = new int[] {");
+		for (int i = 0; i < observation.intArray.length; ++i) {
+			if (i < observation.intArray.length - 1) {
+				System.out.print(observation.intArray[i] + ",");
+			} else {
+				System.out.println(observation.intArray[i] + "};");
+			}
+		}
+		System.out.println("g.addRiverState(new RiverState(river, o));");
+
+		// System.out.println("g.getBestModel(river);");
+
+		System.out.println("a = new Action();");
+		System.out.print("a.intArray = new int[] {");
+		for (int i = 0; i < theState.length; ++i) {
+			if (i < theState.length - 1) {
+				System.out.print(theState[i] + ",");
+			} else {
+				System.out.println(theState[i] + "};");
+			}
+		}
+		System.out.println("g.addAction(a);");
+
+		return returnAction;
 	}
 
 	@Override

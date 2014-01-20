@@ -53,7 +53,7 @@ public class CostTestAgent implements AgentInterface {
         
         // added this to the init method
         mRand = new Random();
-        mModel = new EnvModel(mRiver);
+        mModel = new EnvModel(mRiver, false);
         mCostSolver = new CostSolver(mModel);
         
     }

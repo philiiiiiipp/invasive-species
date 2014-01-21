@@ -29,7 +29,7 @@ public class GeneticModelCreator {
 	private final int mEvolutions;
 
 	/** The standard population size */
-	public final int STANDARD_POP_SIZE = 50;
+	public final int STANDARD_POP_SIZE = 100;
 
 	public final int STANDARD_EVOLUTIONS = 5;
 

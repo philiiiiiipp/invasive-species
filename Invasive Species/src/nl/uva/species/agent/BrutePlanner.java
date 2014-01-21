@@ -2,7 +2,6 @@ package nl.uva.species.agent;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
-import java.util.List;
 
 import javax.swing.JFrame;
 
@@ -67,8 +66,11 @@ public class BrutePlanner implements AgentInterface {
 			mModelGenerator = new GeneticModelCreator(mRiver);
 	}
 
+	int episodeCount = 0;
+
 	@Override
 	public Action agent_start(final Observation observation) {
+		episodeCount = 0;
 
 		if (mCurrentPhase == Phase.LEARNING) {
 			mModelGenerator.finishEpisode();
@@ -89,6 +91,8 @@ public class BrutePlanner implements AgentInterface {
 			action = getBestAction(currentState);
 		}
 
+		episodeCount++;
+
 		return action;
 	}
 
@@ -100,7 +104,7 @@ public class BrutePlanner implements AgentInterface {
 		return best;
 	}
 
-	// int showStuff = 0;
+	int showStuff = 0;
 
 	@Override
 	public Action agent_step(final double reward, final Observation observation) {
@@ -120,17 +124,18 @@ public class BrutePlanner implements AgentInterface {
 		mGraphInterface.update(currentState);
 		mGraphInterface.showActions(action.intArray);
 
-		// if (mCurrentPhase == Phase.PLANNING && showStuff % 100 < 10) {
-		// try {
-		// Thread.sleep(500);
-		// } catch (Exception e) {
-		// // TODO Auto-generated catch block
-		// e.printStackTrace();
-		// }
-		// }
-		//
-		// showStuff++;
+		if (mCurrentPhase == Phase.PLANNING && showStuff % 100 < 10) {
+			try {
+				Thread.sleep(500);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 
+		showStuff++;
+
+		episodeCount++;
 		return action;
 	}
 
@@ -212,10 +217,6 @@ public class BrutePlanner implements AgentInterface {
 									if (reward > bestReward) {
 										bestReward = reward;
 										best = current;
-
-										System.out.println(reward);
-										showArray(current.intArray);
-										System.out.println();
 									}
 								}
 							}
@@ -236,15 +237,42 @@ public class BrutePlanner implements AgentInterface {
 
 	private Action getHeuristicNextAction(final Observation observation) {
 		RiverState rState = new RiverState(mRiver, observation);
-
 		int[] resultAction = new int[rState.getReaches().size()];
-		for (Reach reach : rState.getReaches()) {
-			List<Integer> validActions = reach.getValidActions();
 
-			int action = validActions.get(Utilities.RNG.nextInt(validActions.size()));
-			resultAction[reach.getIndex()] = action;
-			// resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+		if (episodeCount == 0) {
+			// First action, always restorate
+			for (Reach reach : rState.getReaches()) {
+				if (reach.getHabitatsEmpty() > 0) {
+					resultAction[reach.getIndex()] = Utilities.ACTION_RESTORE;
+				} else {
+					resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+				}
+			}
+		} else if (episodeCount % 300 < 100) {
+			// Nothing
+			for (Reach reach : rState.getReaches()) {
+				resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+			}
+		} else if (episodeCount % 300 < 200) {
+			// Eradicate
+			for (Reach reach : rState.getReaches()) {
+				if (reach.getValidActions().contains(Utilities.ACTION_ERADICATE)) {
+					resultAction[reach.getIndex()] = Utilities.ACTION_ERADICATE;
+				} else {
+					resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+				}
+			}
+		} else {
+			// Eradicate + Restore
+			for (Reach reach : rState.getReaches()) {
+				if (reach.getValidActions().contains(Utilities.ACTION_ERADICATE_RESTORE)) {
+					resultAction[reach.getIndex()] = Utilities.ACTION_ERADICATE_RESTORE;
+				} else {
+					resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+				}
+			}
 		}
+
 		Action action = new Action();
 		action.intArray = resultAction;
 		return action;

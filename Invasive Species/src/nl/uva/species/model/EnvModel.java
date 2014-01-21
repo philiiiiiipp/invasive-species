@@ -445,9 +445,7 @@ public class EnvModel {
 			}
 
 			// Adjust the reward for this reach
-			if (reachInvaded > 0) {
-				reward -= (mCostInvadedReach + mCostHabitatTamarisk * reachInvaded);
-			}
+			reward -= (mCostInvadedReach * reachInvaded / reachSize + mCostHabitatTamarisk * reachInvaded);
 			reward -= mCostHabitatEmpty * reachEmpty;
 		}
 

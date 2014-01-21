@@ -5,6 +5,7 @@ import java.util.Set;
 
 import nl.uva.species.utils.Utilities;
 
+import org.apache.commons.math3.linear.RealVector;
 import org.jgap.impl.DoubleGene;
 import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
@@ -48,11 +49,11 @@ public class EnvModel {
 	/** Default value for each reach that there is exogenous germination */
 	private final double mDefaultExoToEndoRatio = 0.8;
 
-	/** The chance for each reach that there is exogenous germination as opposed to endogenous */
-	private double[] mExoToEndoRatio;
-
 	/** Default value for each reach that a Tamarisk plant grows from exogenous germination */
 	private final double mDefaultExoTamarisk = 0.7;
+
+	/** The chance for each reach that there is exogenous germination as opposed to endogenous */
+	private double[] mExoToEndoRatio;
 
 	/** The chance for each reach that a Tamarisk plant grows from exogenous germination */
 	private double[] mExoTamarisk;
@@ -83,23 +84,48 @@ public class EnvModel {
 	 * 
 	 * @param river
 	 *            The river to base the model on
+	 * @param randomlyInitialised
+	 *            If true all parameters get randomly initialized
 	 */
-	public EnvModel(final River river) {
+	public EnvModel(final River river, final boolean randomlyInitialised) {
 		mRiver = river;
 
-		// Set default values for vectors
-		mExoToEndoRatio = new double[river.getNumReaches()];
-		Arrays.fill(mExoToEndoRatio, mDefaultExoToEndoRatio);
+		if (randomlyInitialised) {
+			mEndoTamarisk = Utilities.RNG.nextDouble();
 
-		mExoTamarisk = new double[river.getNumReaches()];
-		Arrays.fill(mExoTamarisk, mDefaultExoTamarisk);
+			// Should never exceed 0.5
+			mUpstreamRate = Utilities.RNG.nextDouble() / 2;
+
+			mDownstreamRate = Utilities.RNG.nextDouble();
+			mEradicationRate = Utilities.RNG.nextDouble();
+			mRestorationRate = Utilities.RNG.nextDouble();
+			mDeathRateTamarisk = Utilities.RNG.nextDouble();
+			mDeathRateNative = Utilities.RNG.nextDouble();
+
+			mExoToEndoRatio = new double[river.getNumReaches()];
+			mExoTamarisk = new double[river.getNumReaches()];
+			for (int i = 0; i < river.getNumReaches(); ++i) {
+				mExoToEndoRatio[i] = Utilities.RNG.nextDouble();
+				mExoTamarisk[i] = Utilities.RNG.nextDouble();
+			}
+		} else {
+			// Set default values for vectors
+			mExoToEndoRatio = new double[river.getNumReaches()];
+			Arrays.fill(mExoToEndoRatio, mDefaultExoToEndoRatio);
+
+			mExoTamarisk = new double[river.getNumReaches()];
+			Arrays.fill(mExoTamarisk, mDefaultExoTamarisk);
+		}
 	}
 
 	public EnvModel(final River river, final DoubleGene[] genes) {
 		mRiver = river;
 
 		mEndoTamarisk = genes[Parameter.ENDO_TAMARISK.ordinal()].doubleValue();
-		mUpstreamRate = genes[Parameter.UPSTREAM_RATE.ordinal()].doubleValue();
+
+		// Should never exceed 0.5
+		mUpstreamRate = genes[Parameter.UPSTREAM_RATE.ordinal()].doubleValue() / 2;
+
 		mDownstreamRate = genes[Parameter.DOWNSTREAM_RATE.ordinal()].doubleValue();
 		mEradicationRate = genes[Parameter.ERADICATION_RATE.ordinal()].doubleValue();
 		mRestorationRate = genes[Parameter.RESTORATION_RATE.ordinal()].doubleValue();
@@ -107,6 +133,7 @@ public class EnvModel {
 		mDeathRateNative = genes[Parameter.DEATH_RATE_NATIVE.ordinal()].doubleValue();
 
 		mExoToEndoRatio = new double[river.getNumReaches()];
+		mExoTamarisk = new double[river.getNumReaches()];
 		for (int i = 0; i < river.getNumReaches(); ++i) {
 			mExoToEndoRatio[i] = genes[i + Parameter.values().length].doubleValue();
 			mExoTamarisk[i] = genes[i + river.getNumReaches() + Parameter.values().length].doubleValue();
@@ -438,7 +465,8 @@ public class EnvModel {
 	 * @param resultState
 	 *            The actual resulting state after performing the actions
 	 * 
-	 * @return A score representing the correlation between model's expectation and the actual outcome
+	 * @return A score representing the correlation between model's expectation and the actual outcome where 1 is the
+	 *         highest and 0 the lowest
 	 */
 	public double evaluateModel(final RiverState state, final Action actions, final RiverState resultState) {
 		double reward = 0;
@@ -741,4 +769,53 @@ public class EnvModel {
 		return false;
 	}
 
+    /**
+     * Sets the cost parameters
+     * 
+     * @param costParameters
+     *          must be a RealVector with the following entries:
+     *          (costHabitatTamarisk, costHabitatEmpty, costInvadedReach,
+     *           costEradicate, costRestorate, 
+     *           costVariableEradicate, costVariableRestore, costVariableEradicateRestore)
+     */
+    public void setCostParameters(RealVector costParameters) {
+        mCostHabitatTamarisk = costParameters.getEntry(0);
+        mCostHabitatEmpty = costParameters.getEntry(1);
+        mCostInvadedReach = costParameters.getEntry(2);
+        mCostEradicate = costParameters.getEntry(3);
+        mCostRestorate = costParameters.getEntry(4);
+        mCostVariableEradicate = costParameters.getEntry(5);
+        mCostVariableRestorate = costParameters.getEntry(6);
+        mCostVariableEradicateRestorate = costParameters.getEntry(7);
+    }
+    
+    	/**
+	 * Returns the average euclidean distance between this model an another
+	 * 
+	 * @param second
+	 *            The model to be compared to
+	 * @return The euclidean distance between 0-1;
+	 */
+	public double compareTo(final EnvModel second) {
+		double result = 0;
+
+		for (int i = 0; i < mExoToEndoRatio.length; ++i) {
+			result += Math.abs(mExoToEndoRatio[i] - second.mExoToEndoRatio[i]);
+		}
+
+		for (int i = 0; i < mExoTamarisk.length; ++i) {
+			result += Math.abs(mExoTamarisk[i] - second.mExoTamarisk[i]);
+		}
+
+		result += Math.abs(mEndoTamarisk - second.mEndoTamarisk);
+		result += Math.abs(mUpstreamRate - second.mUpstreamRate);
+		result += Math.abs(mDownstreamRate - second.mDownstreamRate);
+		result += Math.abs(mEradicationRate - second.mEradicationRate);
+		result += Math.abs(mRestorationRate - second.mRestorationRate);
+		result += Math.abs(mDeathRateTamarisk - second.mDeathRateTamarisk);
+		result += Math.abs(mDeathRateNative - second.mDeathRateNative);
+
+		int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length + 7;
+		return result / totalParameterCount;
+	}
 }

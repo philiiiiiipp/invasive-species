@@ -13,6 +13,8 @@ import org.rlcommunity.rlglue.codec.types.Action;
 
 public class EvaluateModel extends FitnessFunction {
 
+	static double highest = -1;
+
 	/**
 	 * Generated default serial UID
 	 */
@@ -35,7 +37,13 @@ public class EvaluateModel extends FitnessFunction {
 
 	@Override
 	protected double evaluate(final IChromosome a_subject) {
-		EnvModel model = new EnvModel(mRiver, (DoubleGene[]) a_subject.getGenes());
+
+		DoubleGene[] genes = new DoubleGene[a_subject.getGenes().length];
+		for (int i = 0; i < a_subject.getGenes().length; ++i) {
+			genes[i] = (DoubleGene) a_subject.getGene(i);
+		}
+
+		EnvModel model = new EnvModel(mRiver, genes);
 		double result = 0;
 
 		for (int i = 0; i < mRiverState.size() - 1; ++i) {

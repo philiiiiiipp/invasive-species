@@ -440,7 +440,7 @@ public class EnvModel {
 				final double tamariskChanceNorm = tamariskChance / chanceSum;
 
 				// Update the habitats with the new regrown tree
-				reachInvaded = reachEmpty * tamariskChanceNorm;
+				reachInvaded += reachEmpty * tamariskChanceNorm;
 				reachEmpty = 0;
 			}
 

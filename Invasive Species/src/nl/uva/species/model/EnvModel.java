@@ -5,6 +5,7 @@ import java.util.Set;
 
 import nl.uva.species.utils.Utilities;
 
+import org.apache.commons.math3.linear.RealVector;
 import org.jgap.impl.DoubleGene;
 import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
@@ -439,7 +440,7 @@ public class EnvModel {
 				final double tamariskChanceNorm = tamariskChance / chanceSum;
 
 				// Update the habitats with the new regrown tree
-				reachInvaded = reachEmpty * tamariskChanceNorm;
+				reachInvaded += reachEmpty * tamariskChanceNorm;
 				reachEmpty = 0;
 			}
 
@@ -712,7 +713,6 @@ public class EnvModel {
 	 * @return The reward of the transition
 	 */
 	public double getActionReward(final RiverState state, final Action actions) {
-		double reward = 0;
 		double actionCost = 0;
 		final int numReaches = mRiver.getNumReaches();
 
@@ -728,7 +728,7 @@ public class EnvModel {
 					// Can't eradicate a reach without Tamarisk plants
 					return mRiver.getPenalty();
 				}
-				reward -= (mCostEradicate + mCostVariableEradicate * reach.getHabitatsInvaded());
+				actionCost += mCostEradicate + mCostVariableEradicate * reach.getHabitatsInvaded();
 				break;
 
 			case Utilities.ACTION_RESTORE:
@@ -736,7 +736,7 @@ public class EnvModel {
 					// Can't restore a reach without empty habitats
 					return mRiver.getPenalty();
 				}
-				reward -= (mCostRestorate + mCostVariableRestorate * reach.getHabitatsEmpty());
+				actionCost += mCostRestorate + mCostVariableRestorate * reach.getHabitatsEmpty();
 				break;
 
 			case Utilities.ACTION_ERADICATE_RESTORE:
@@ -744,7 +744,7 @@ public class EnvModel {
 					// Can't eradicate a reach without Tamarisk plants
 					return mRiver.getPenalty();
 				}
-				reward -= (mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded());
+				actionCost += mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded();
 				break;
 			}
 		}
@@ -754,7 +754,7 @@ public class EnvModel {
 			return mRiver.getPenalty();
 		}
 
-		return reward;
+		return -actionCost;
 	}
 
 	/**
@@ -771,7 +771,27 @@ public class EnvModel {
 		return false;
 	}
 
-	/**
+    /**
+     * Sets the cost parameters
+     * 
+     * @param costParameters
+     *          must be a RealVector with the following entries:
+     *          (costHabitatTamarisk, costHabitatEmpty, costInvadedReach,
+     *           costEradicate, costRestorate, 
+     *           costVariableEradicate, costVariableRestore, costVariableEradicateRestore)
+     */
+    public void setCostParameters(RealVector costParameters) {
+        mCostHabitatTamarisk = costParameters.getEntry(0);
+        mCostHabitatEmpty = costParameters.getEntry(1);
+        mCostInvadedReach = costParameters.getEntry(2);
+        mCostEradicate = costParameters.getEntry(3);
+        mCostRestorate = costParameters.getEntry(4);
+        mCostVariableEradicate = costParameters.getEntry(5);
+        mCostVariableRestorate = costParameters.getEntry(6);
+        mCostVariableEradicateRestorate = costParameters.getEntry(7);
+    }
+    
+    	/**
 	 * Returns the average euclidean distance between this model an another
 	 * 
 	 * @param second

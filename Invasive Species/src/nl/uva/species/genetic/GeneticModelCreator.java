@@ -11,7 +11,6 @@ import nl.uva.species.model.RiverState;
 
 import org.jgap.Chromosome;
 import org.jgap.Configuration;
-import org.jgap.Gene;
 import org.jgap.Genotype;
 import org.jgap.IChromosome;
 import org.jgap.InvalidConfigurationException;
@@ -35,6 +34,9 @@ public class GeneticModelCreator {
 
 	private Genotype mGenotype;
 
+	private static String[] GEN_NAMES = new String[] { "ENDO_TAMARISK", "UPSTREAM_RATE", "DOWNSTREAM_RATE",
+			"ERADICATION_RATE", "RESTORATION_RATE", "DEATH_RATE_TAMARISK", "DEATH_RATE_NATIVE" };
+
 	/**
 	 * Create a genetic model creator with standard values and the given river
 	 * 
@@ -52,7 +54,7 @@ public class GeneticModelCreator {
 	}
 
 	/**
-	 * Initialise a genotype with the given parameters
+	 * Initialize a genotype with the given parameters
 	 * 
 	 * @param populationSize
 	 *            The size of the population
@@ -96,17 +98,27 @@ public class GeneticModelCreator {
 			mGenotype.evolve();
 			System.out.println(i + ": " + mGenotype.getFittestChromosome().getFitnessValue());
 		}
-		// Print summary.
-		// --------------
+
+		// Print summary
 		IChromosome fittest = mGenotype.getFittestChromosome();
 
 		System.out.println("== Fittest Cromosome ==");
-		int i = 1;
-		DecimalFormat df = new DecimalFormat("#.####");
-		for (Gene g : fittest.getGenes()) {
-			System.out.println(i + ": " + df.format(((DoubleGene) g).doubleValue()));
 
-			++i;
+		DecimalFormat df = new DecimalFormat("#.####");
+		for (int i = 0; i < GEN_NAMES.length; ++i) {
+			System.out.println(GEN_NAMES[i] + " \t " + df.format(((DoubleGene) fittest.getGenes()[i]).doubleValue()));
+		}
+
+		System.out.println("==ExoToEndoRatio==");
+		for (int i = GEN_NAMES.length; i < GEN_NAMES.length + river.getNumReaches(); ++i) {
+			System.out.println((i - GEN_NAMES.length) + ": "
+					+ df.format(((DoubleGene) fittest.getGenes()[i]).doubleValue()));
+		}
+
+		System.out.println("==ExoTamarisk==");
+		for (int i = GEN_NAMES.length + river.getNumReaches(); i < GEN_NAMES.length + 2 * river.getNumReaches(); ++i) {
+			System.out.println((i - GEN_NAMES.length + river.getNumReaches()) + ": "
+					+ df.format(((DoubleGene) fittest.getGenes()[i]).doubleValue()));
 		}
 
 		System.out.println("Fittest Chromosome has fitness " + fittest.getFitnessValue());

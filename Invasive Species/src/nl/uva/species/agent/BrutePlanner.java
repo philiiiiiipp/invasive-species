@@ -252,7 +252,7 @@ public class BrutePlanner implements AgentInterface {
 		int[] resultAction = new int[rState.getReaches().size()];
 
 		if (mEpisodeCount == 0) {
-			// First action, always restorate
+			// First action, always restore
 			for (Reach reach : rState.getReaches()) {
 				if (reach.getHabitatsEmpty() > 0) {
 					resultAction[reach.getIndex()] = Utilities.ACTION_RESTORE;

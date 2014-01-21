@@ -11,6 +11,7 @@ import nl.uva.species.model.Reach;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
 import nl.uva.species.ui.GraphInterface;
+import nl.uva.species.utils.Pair;
 import nl.uva.species.utils.Utilities;
 
 import org.rlcommunity.rlglue.codec.AgentInterface;
@@ -21,22 +22,30 @@ import org.rlcommunity.rlglue.codec.util.AgentLoader;
 
 public class BrutePlanner implements AgentInterface {
 
+	/** The supported phases of the environment */
 	private enum Phase {
 		LEARNING, PLANNING
 	};
 
+	/** The current phase */
 	private Phase mCurrentPhase = Phase.LEARNING;
 
+	/** The river where our model bases on */
 	private River mRiver;
 
+	/** The generic algorithm */
 	private GeneticModelCreator mModelGenerator;
 
+	/** The last calculated most probable model */
 	private EnvModel mCurrentModel;
 
-	private int counter = 0;
+	/** Episode counter */
+	int mEpisodeCount = 0;
 
-	private boolean skippedFirstPlanning = false;
+	/** Graph update counter */
+	private int mGraphVisibilityCounter = 0;
 
+	/** The graph interface */
 	private GraphInterface mGraphInterface = new GraphInterface();
 
 	@Override
@@ -56,9 +65,10 @@ public class BrutePlanner implements AgentInterface {
 		mCurrentModel = new EnvModel(mRiver, false);
 
 		try {
+			// Set the err output to /dev/null, most probable works only under linux/mac (Guess who wrote that). This is
+			// there to prevent the graph from spmaming the whole console.
 			System.setErr(new PrintStream("/dev/null"));
 		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 
@@ -66,11 +76,9 @@ public class BrutePlanner implements AgentInterface {
 			mModelGenerator = new GeneticModelCreator(mRiver);
 	}
 
-	int episodeCount = 0;
-
 	@Override
 	public Action agent_start(final Observation observation) {
-		episodeCount = 0;
+		mEpisodeCount = 0;
 
 		if (mCurrentPhase == Phase.LEARNING) {
 			mModelGenerator.finishEpisode();
@@ -91,20 +99,10 @@ public class BrutePlanner implements AgentInterface {
 			action = getBestAction(currentState);
 		}
 
-		episodeCount++;
+		mEpisodeCount++;
 
 		return action;
 	}
-
-	private Action getNothingAction() {
-		Action best = new Action();
-		best.intArray = new int[] { Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING,
-				Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING };
-
-		return best;
-	}
-
-	int showStuff = 0;
 
 	@Override
 	public Action agent_step(final double reward, final Observation observation) {
@@ -121,10 +119,11 @@ public class BrutePlanner implements AgentInterface {
 			action = getBestAction(currentState);
 		}
 
-		mGraphInterface.update(currentState);
-		mGraphInterface.showActions(action.intArray);
+		if (mCurrentPhase == Phase.PLANNING && mGraphVisibilityCounter % 100 < 10) {
 
-		if (mCurrentPhase == Phase.PLANNING && showStuff % 100 < 10) {
+			mGraphInterface.update(currentState);
+			mGraphInterface.showActions(action.intArray);
+
 			try {
 				Thread.sleep(500);
 			} catch (Exception e) {
@@ -133,9 +132,9 @@ public class BrutePlanner implements AgentInterface {
 			}
 		}
 
-		showStuff++;
+		mGraphVisibilityCounter++;
 
-		episodeCount++;
+		mEpisodeCount++;
 		return action;
 	}
 
@@ -172,7 +171,6 @@ public class BrutePlanner implements AgentInterface {
 		//
 		if (inMessage.startsWith("unfreeze learning")) {
 			mCurrentPhase = Phase.LEARNING;
-			skippedFirstPlanning = true;
 
 			mModelGenerator.reinitialise(mRiver);
 			return "message understood, policy unfrozen";
@@ -194,52 +192,66 @@ public class BrutePlanner implements AgentInterface {
 		return "Invasive agent does not understand your message.";
 	}
 
+	/**
+	 * Brute-force method to determine the best possible action, considering a horizon of 1
+	 * 
+	 * @param riverState
+	 *            The current state
+	 * @return The best possible action
+	 */
 	private Action getBestAction(final RiverState riverState) {
-		Action best = new Action();
-		best.intArray = new int[] { Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING,
-				Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING };
+		return getBestAction(riverState, 0, new int[riverState.getReaches().size()]).getLeft();
+	}
 
-		double bestReward = Double.NEGATIVE_INFINITY;
+	/**
+	 * Search recursive through all possible actions to determine the best action
+	 * 
+	 * @param riverState
+	 *            The current state
+	 * @param reachPosition
+	 *            The position which needs to be set next
+	 * @param action
+	 *            The so far action list
+	 * @return Returns the best Action with its rewards value
+	 */
+	private Pair<Action, Double> getBestAction(final RiverState riverState, final int reachPosition, final int[] action) {
+		if (reachPosition == riverState.getReaches().size()) {
+			Action current = new Action();
+			current.intArray = action;
 
-		for (int a = Utilities.ACTION_NOTHING; a <= Utilities.ACTION_ERADICATE_RESTORE; ++a) {
-			for (int b = Utilities.ACTION_NOTHING; b <= Utilities.ACTION_ERADICATE_RESTORE; ++b) {
-				for (int c = Utilities.ACTION_NOTHING; c <= Utilities.ACTION_ERADICATE_RESTORE; ++c) {
-					for (int d = Utilities.ACTION_NOTHING; d <= Utilities.ACTION_ERADICATE_RESTORE; ++d) {
-						for (int e = Utilities.ACTION_NOTHING; e <= Utilities.ACTION_ERADICATE_RESTORE; ++e) {
-							for (int f = Utilities.ACTION_NOTHING; f <= Utilities.ACTION_ERADICATE_RESTORE; ++f) {
-								for (int g = Utilities.ACTION_NOTHING; g <= Utilities.ACTION_ERADICATE_RESTORE; ++g) {
-									Action current = new Action();
-									current.intArray = new int[] { a, b, c, d, e, f, g };
+			double reward = mCurrentModel.getExpectedNextStateReward(riverState, current)
+					+ mCurrentModel.getActionReward(riverState, current);
 
-									double reward = mCurrentModel.getExpectedNextStateReward(riverState, current)
-											+ mCurrentModel.getActionReward(riverState, current);
+			return new Pair<Action, Double>(current, reward);
+		}
 
-									if (reward > bestReward) {
-										bestReward = reward;
-										best = current;
-									}
-								}
-							}
-						}
-					}
-				}
+		Reach currentReach = riverState.getReach(reachPosition);
+		Pair<Action, Double> temp = null, resultAction = null;
+		for (Integer a : currentReach.getValidActions()) {
+			action[currentReach.getIndex()] = a;
+
+			temp = getBestAction(riverState, reachPosition + 1, action);
+
+			if (resultAction == null || resultAction.getRight() < temp.getRight()) {
+				resultAction = temp;
 			}
 		}
 
-		return best;
+		return resultAction;
 	}
 
-	private void showArray(final int[] array) {
-		for (int i : array) {
-			System.out.print(i + " ");
-		}
-	}
-
+	/**
+	 * Clever heuristic in order to determine a good model with our genetic algorihm's
+	 * 
+	 * @param observation
+	 *            The last observation
+	 * @return The action which will presumably give us the more knowledge about the real model
+	 */
 	private Action getHeuristicNextAction(final Observation observation) {
 		RiverState rState = new RiverState(mRiver, observation);
 		int[] resultAction = new int[rState.getReaches().size()];
 
-		if (episodeCount == 0) {
+		if (mEpisodeCount == 0) {
 			// First action, always restorate
 			for (Reach reach : rState.getReaches()) {
 				if (reach.getHabitatsEmpty() > 0) {
@@ -248,12 +260,12 @@ public class BrutePlanner implements AgentInterface {
 					resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
 				}
 			}
-		} else if (episodeCount % 300 < 100) {
+		} else if (mEpisodeCount % 300 < 100) {
 			// Nothing
 			for (Reach reach : rState.getReaches()) {
 				resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
 			}
-		} else if (episodeCount % 300 < 200) {
+		} else if (mEpisodeCount % 300 < 200) {
 			// Eradicate
 			for (Reach reach : rState.getReaches()) {
 				if (reach.getValidActions().contains(Utilities.ACTION_ERADICATE)) {

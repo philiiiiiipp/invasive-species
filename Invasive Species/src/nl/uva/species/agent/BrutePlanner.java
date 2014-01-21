@@ -212,6 +212,10 @@ public class BrutePlanner implements AgentInterface {
 									if (reward > bestReward) {
 										bestReward = reward;
 										best = current;
+
+										System.out.println(reward);
+										showArray(current.intArray);
+										System.out.println();
 									}
 								}
 							}

@@ -87,7 +87,7 @@ public class GeneticModelCreator {
 			stateCounter += riverList.size();
 		}
 
-		if (stateCounter == 0) {
+		if (stateCounter < 3) {
 			// we have no data return our prior
 			return new EnvModel(river, false);
 		}

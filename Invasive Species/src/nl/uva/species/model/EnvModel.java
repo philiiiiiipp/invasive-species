@@ -23,13 +23,13 @@ public class EnvModel {
 	private final River mRiver;
 
 	/** The cost per invaded reach */
-	private double mCostInvadedReach = 10;
+	private double mCostInvadedReach = 1;
 
 	/** The cost per habitat containing a Tamarisk */
 	private double mCostHabitatTamarisk = 0.1;
 
 	/** The cost per empty habitat */
-	private double mCostHabitatEmpty = 0.05;
+	private double mCostHabitatEmpty = 0.00;
 
 	/** The consistent cost of one eradication */
 	private double mCostEradicate = 0.5;
@@ -38,13 +38,13 @@ public class EnvModel {
 	private double mCostRestorate = 0.9;
 
 	/** The variable cost for each Tamarisk plant attempted to eradicate */
-	private double mCostVariableEradicate = 0.4;
+	private double mCostVariableEradicate = 0.5;
 
 	/** The variable cost for each native plant attempted to eradicate */
-	private double mCostVariableRestorate = 0.4;
+	private double mCostVariableRestorate = 0.0;
 
 	/** The variable cost for each Tamarisk plant attempted to eradicate and restore */
-	private double mCostVariableEradicateRestorate = 0.8;
+	private double mCostVariableEradicateRestorate = 0.1;
 
 	/** Default value for each reach that there is exogenous germination */
 	private final double mDefaultExoToEndoRatio = 0.8;
@@ -646,12 +646,15 @@ public class EnvModel {
 
 				switch (habitats[i]) {
 				case Utilities.HABITAT_EMPTY:
+					// reward += (habitatsEmpty[habitatIndex] > 1 / 3 ? 1 : 0);
 					reward += habitatsEmpty[habitatIndex];
 					break;
 				case Utilities.HABITAT_NATIVE:
+					// reward += (habitatsNative[habitatIndex] > 1 / 3 ? 1 : 0);
 					reward += habitatsNative[habitatIndex];
 					break;
 				case Utilities.HABITAT_INVADED:
+					// reward += (habitatsInvaded[habitatIndex] > 1 / 3 ? 1 : 0);
 					reward += habitatsInvaded[habitatIndex];
 					break;
 				}

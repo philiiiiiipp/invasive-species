@@ -22,18 +22,18 @@ import org.rlcommunity.rlglue.codec.types.Action;
 public class GeneticModelCreator {
 
 	/** The past river states */
-	private final List<RiverState> mStates = new ArrayList<>();
+	private final List<List<RiverState>> mStates = new ArrayList<>();
 
-	private final List<Action> mActions = new ArrayList<>();
+	private final List<List<Action>> mActions = new ArrayList<>();
 
 	private final int mEvolutions;
 
 	/** The standard population size */
-	public final int STANDARD_POP_SIZE = 500;
+	public final int STANDARD_POP_SIZE = 50;
 
-	public final int STANDARD_EVOLUTIONS = 2;
+	public final int STANDARD_EVOLUTIONS = 5;
 
-	private final Genotype mGenotype;
+	private Genotype mGenotype;
 
 	/**
 	 * Create a genetic model creator with standard values and the given river
@@ -47,6 +47,10 @@ public class GeneticModelCreator {
 		mGenotype = initialiseGenotype(STANDARD_POP_SIZE, river, geneNumber);
 	}
 
+	public void reinitialise(final River river) {
+		initialiseGenotype(STANDARD_POP_SIZE, river, EnvModel.Parameter.values().length + river.getNumReaches() * 2);
+	}
+
 	/**
 	 * Initialise a genotype with the given parameters
 	 * 
@@ -55,6 +59,7 @@ public class GeneticModelCreator {
 	 * @return The generated genotype
 	 */
 	private Genotype initialiseGenotype(final int populationSize, final River river, final int geneNumber) {
+		Configuration.reset();
 		Configuration gaConf = new DefaultConfiguration();
 		gaConf.setPreservFittestIndividual(true);
 		gaConf.setKeepPopulationSizeConstant(false);
@@ -77,6 +82,15 @@ public class GeneticModelCreator {
 	}
 
 	public EnvModel getBestModel(final River river) {
+		int stateCounter = 0;
+		for (List<RiverState> riverList : mStates) {
+			stateCounter += riverList.size();
+		}
+
+		if (stateCounter == 0) {
+			// we have no data return our prior
+			return new EnvModel(river, false);
+		}
 
 		for (int i = 0; i < mEvolutions; i++) {
 			mGenotype.evolve();
@@ -100,16 +114,31 @@ public class GeneticModelCreator {
 	}
 
 	/**
+	 * Finish the current episode, creating space for new states and actions
+	 */
+	public void finishEpisode() {
+		mStates.add(new ArrayList<RiverState>());
+		mActions.add(new ArrayList<Action>());
+	}
+
+	/**
 	 * Add the river state to the river state observation list
 	 * 
 	 * @param riverState
 	 * @return true if the action was successful
 	 */
 	public boolean addRiverState(final RiverState riverState) {
-		return mStates.add(riverState);
+		return mStates.get(mStates.size() - 1).add(riverState);
 	}
 
+	/**
+	 * Add the action to the action list
+	 * 
+	 * @param a
+	 *            The action to add
+	 * @return true if the action was successful
+	 */
 	public boolean addAction(final Action a) {
-		return mActions.add(a);
+		return mActions.get(mStates.size() - 1).add(a);
 	}
 }

@@ -36,7 +36,7 @@ public class SparseCooperativeAgent implements AgentInterface {
         System.out.println(taskSpecification);
         if (mModel == null) {
             mRiver = new River(new TaskSpec(taskSpecification));
-            mModel = new EnvModel(mRiver);
+            mModel = new EnvModel(mRiver, false);
         }
     }
 
@@ -47,7 +47,7 @@ public class SparseCooperativeAgent implements AgentInterface {
         defaultAction.intArray = new int[7];
         Arrays.fill(defaultAction.intArray, Utilities.ACTION_ERADICATE_RESTORE);
 
-        EnvModel model = new EnvModel(mRiver);
+        EnvModel model = new EnvModel(mRiver, false);
         RiverState state = new RiverState(mRiver, observation);
 
         return null;

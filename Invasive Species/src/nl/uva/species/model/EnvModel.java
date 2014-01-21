@@ -710,7 +710,6 @@ public class EnvModel {
 	 * @return The reward of the transition
 	 */
 	public double getActionReward(final RiverState state, final Action actions) {
-		double reward = 0;
 		double actionCost = 0;
 		final int numReaches = mRiver.getNumReaches();
 
@@ -726,7 +725,7 @@ public class EnvModel {
 					// Can't eradicate a reach without Tamarisk plants
 					return mRiver.getPenalty();
 				}
-				reward -= (mCostEradicate + mCostVariableEradicate * reach.getHabitatsInvaded());
+				actionCost += mCostEradicate + mCostVariableEradicate * reach.getHabitatsInvaded();
 				break;
 
 			case Utilities.ACTION_RESTORE:
@@ -734,7 +733,7 @@ public class EnvModel {
 					// Can't restore a reach without empty habitats
 					return mRiver.getPenalty();
 				}
-				reward -= (mCostRestorate + mCostVariableRestorate * reach.getHabitatsEmpty());
+				actionCost += mCostRestorate + mCostVariableRestorate * reach.getHabitatsEmpty();
 				break;
 
 			case Utilities.ACTION_ERADICATE_RESTORE:
@@ -742,7 +741,7 @@ public class EnvModel {
 					// Can't eradicate a reach without Tamarisk plants
 					return mRiver.getPenalty();
 				}
-				reward -= (mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded());
+				actionCost += mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded();
 				break;
 			}
 		}
@@ -752,7 +751,7 @@ public class EnvModel {
 			return mRiver.getPenalty();
 		}
 
-		return reward;
+		return -actionCost;
 	}
 
 	/**

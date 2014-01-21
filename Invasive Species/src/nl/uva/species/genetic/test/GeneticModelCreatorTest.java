@@ -22,8 +22,8 @@ public class GeneticModelCreatorTest {
 	public static void testGeneratedModel() {
 		River testRiver = createRiver();
 		Observation startObservation = new Observation();
-		startObservation.intArray = new int[] { 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
-				3, 3, 3, 3 };
+		startObservation.intArray = new int[] { 1, 1, 3, 2, 3, 1, 1, 3, 1, 3, 2, 1, 3, 1, 3, 1, 2, 2, 1, 3, 2, 2, 2, 2,
+				3, 3, 2, 1 };
 
 		EnvModel trueModel = new EnvModel(testRiver, false);
 
@@ -34,7 +34,7 @@ public class GeneticModelCreatorTest {
 
 		GeneticModelCreator gModel = new GeneticModelCreator(testRiver);
 
-		int simulationSteps = 50;
+		int simulationSteps = 1000;
 		gModel.addRiverState(oldState);
 		gModel.addRiverState(newState);
 		gModel.addAction(lastAction);
@@ -48,6 +48,22 @@ public class GeneticModelCreatorTest {
 		}
 
 		EnvModel generatedModel = gModel.getBestModel(testRiver);
+
+		GeneticModelCreator gModel2 = new GeneticModelCreator(testRiver);
+
+		gModel2.addRiverState(oldState);
+		gModel2.addRiverState(newState);
+		gModel2.addAction(lastAction);
+
+		for (int i = 0; i < simulationSteps; ++i) {
+			lastAction = genereateActions(newState.getObservation());
+			newState = generatedModel.getPossibleNextState(newState, lastAction);
+
+			gModel2.addRiverState(newState);
+			gModel2.addAction(lastAction);
+		}
+
+		EnvModel generatedModel2 = gModel2.getBestModel(testRiver);
 
 		System.out.println("Distance true <-> generated is: " + generatedModel.compareTo(trueModel));
 
@@ -77,17 +93,56 @@ public class GeneticModelCreatorTest {
 		System.out.println("Eval true vs. true: " + evaluation);
 
 		oldState = new RiverState(testRiver, startObservation);
-		EnvModel randomModel = new EnvModel(testRiver, true);
+		// EnvModel randomModel = new EnvModel(testRiver, true);
 		evaluation = 0;
 		for (int i = 0; i < comparisonSteps; ++i) {
 			lastAction = genereateActions(oldState.getObservation());
 			newState = trueModel.getPossibleNextState(oldState, lastAction);
 
-			evaluation += randomModel.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
+			evaluation += generatedModel2.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
 
 			oldState = newState;
 		}
-		System.out.println("Eval random vs. true: " + evaluation);
+		System.out.println("Eval gen2 vs. true: " + evaluation);
+
+		oldState = new RiverState(testRiver, startObservation);
+		// EnvModel randomModel = new EnvModel(testRiver, true);
+		evaluation = 0;
+		for (int i = 0; i < comparisonSteps; ++i) {
+			lastAction = genereateActions(oldState.getObservation());
+			newState = generatedModel.getPossibleNextState(oldState, lastAction);
+
+			evaluation += generatedModel2.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
+
+			oldState = newState;
+		}
+		System.out.println("Eval gen2 vs. gen1: " + evaluation);
+
+		oldState = new RiverState(testRiver, startObservation);
+		// EnvModel randomModel = new EnvModel(testRiver, true);
+		evaluation = 0;
+		for (int i = 0; i < comparisonSteps; ++i) {
+			lastAction = genereateActions(oldState.getObservation());
+			newState = generatedModel.getPossibleNextState(oldState, lastAction);
+
+			evaluation += generatedModel.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
+
+			oldState = newState;
+		}
+		System.out.println("Eval gen1 vs. gen1: " + evaluation);
+
+		oldState = new RiverState(testRiver, startObservation);
+		// EnvModel randomModel = new EnvModel(testRiver, true);
+		evaluation = 0;
+		for (int i = 0; i < comparisonSteps; ++i) {
+			lastAction = genereateActions(oldState.getObservation());
+			newState = generatedModel2.getPossibleNextState(oldState, lastAction);
+
+			evaluation += generatedModel2.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
+
+			oldState = newState;
+		}
+		System.out.println("Eval gen2 vs. gen2: " + evaluation);
 	}
 
 	/**

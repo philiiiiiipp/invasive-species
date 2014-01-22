@@ -13,6 +13,7 @@ import nl.uva.species.model.Reach;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
 import nl.uva.species.ui.GraphInterface;
+import nl.uva.species.utils.Messages;
 import nl.uva.species.utils.Utilities;
 
 import org.rlcommunity.rlglue.codec.AgentInterface;
@@ -21,16 +22,13 @@ import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
 import org.rlcommunity.rlglue.codec.util.AgentLoader;
 
-public class SparseCooperativeAgent implements AgentInterface {
+public class SparseCooperativeAgent extends AbstractAgent {
 
     /** The learning rate alpha as described in (16) by (Kok & Vlassis, 2006) */
     private static final double LEARNING_RATE = 0.2;
-    
+
     /** The discount factor gamma as described in (16) by (Kok & Vlassis, 2006) */
     private static final double DISCOUNT = 0.2;
-
-    private boolean mPolicyFrozen;
-    private boolean mExploringFrozen;
 
     private River mRiver;
     private EnvModel mModel;
@@ -39,101 +37,93 @@ public class SparseCooperativeAgent implements AgentInterface {
 
     public SparseCooperativeAgent() {}
 
-    public SparseCooperativeAgent(final EnvModel model) {
+    @Override
+    public void init(final River river) {
+        mRiver = river;
+    }
+
+    public void setModel(final EnvModel model) {
         mModel = model;
+
+        trainQ();
     }
 
     @Override
-    public void agent_init(final String taskSpecification) {
-        if (mModel == null) {
-            mRiver = new River(new TaskSpec(taskSpecification));
-            mModel = new EnvModel(mRiver, false);
-        }
-    }
+    public Action start(final Observation observation) {
+        final RiverState state = new RiverState(mRiver, observation);
 
-    @Override
-    public Action agent_start(final Observation observation) {
-
-        Action defaultAction = new Action();
-        defaultAction.intArray = new int[7];
-        Arrays.fill(defaultAction.intArray, Utilities.ACTION_ERADICATE_RESTORE);
-
-        EnvModel model = new EnvModel(mRiver, false);
-        RiverState state = new RiverState(mRiver, observation);
-
-        return null;
-    }
-
-    @Override
-    public Action agent_step(final double reward, final Observation observation) {
-        return agent_start(observation);
-    }
-
-    @Override
-    public void agent_end(final double reward) {
-        System.out.println("Agent_End");
-
-    }
-
-    @Override
-    public void agent_cleanup() {
-        System.out.println("Agent_Cleanup");
-
-    }
-
-    @Override
-    public String agent_message(final String inMessage) {
-        System.out.println("Agent_Message: " + inMessage);
-
-        if (inMessage.startsWith("freeze learning")) {
-            mPolicyFrozen = true;
-            return "message understood, policy frozen";
-        }
-
-        if (inMessage.startsWith("unfreeze learning")) {
-            mPolicyFrozen = false;
-            return "message understood, policy unfrozen";
-        }
-
-        if (inMessage.startsWith("freeze exploring")) {
-            mExploringFrozen = true;
-            return "message understood, exploring frozen";
-        }
-
-        if (inMessage.startsWith("unfreeze exploring")) {
-            mExploringFrozen = false;
-            return "message understood, exploring frozen";
-        }
-
-        return "Invasive agent does not understand your message.";
-    }
-
-    private Action getAction(final RiverState state) {
-        
-        final Map<Reach, ReachKey> keys = new HashMap<>();
+        final Action bestActions = new Action();
+        bestActions.intArray = new int[mRiver.getNumReaches()];
         for (final Reach reach : state.getReaches()) {
-            keys.put(reach, new ReachKey(reach));
+            bestActions.intArray[reach.getIndex()] = getBestAction(new ReachKey(reach));
         }
 
-        for (final Reach reach : state.getReaches()) {
-            final ReachKey reachKey = keys.get(reach);
-            
-            final List<Integer> actions = reach.getValidActions();
-            for (final Integer action : actions) {
-                final double Q = getQ(reachKey, action);
-                putQ(reachKey, action, Q + LEARNING_RATE * (getReward() + DISCOUNT * getNextQ() - Q));
+        return bestActions;
+    }
+
+    @Override
+    public Action step(final double reward, final Observation observation) {
+        return start(observation);
+    }
+
+    @Override
+    public void end(final double reward) {}
+
+    @Override
+    public void cleanup() {}
+
+    @Override
+    public void message(Messages message) {}
+
+    private void trainQ() {
+        final int numReaches = mRiver.getNumReaches();
+        final int numHabitats = numReaches * mRiver.getReachSize();
+        mQ.clear();
+
+        for (int runs = 0; runs < 100; ++runs) {
+            final Observation observation = new Observation();
+            observation.intArray = new int[numHabitats];
+            for (int i = 0; i < numHabitats; ++i) {
+                observation.intArray[i] = Utilities.RNG.nextInt(2) + 2;
+            }
+            final RiverState state = new RiverState(mRiver, observation);
+
+            final Map<Reach, ReachKey> keys = new HashMap<>();
+            for (final Reach reach : state.getReaches()) {
+                keys.put(reach, new ReachKey(reach));
+            }
+
+            final Action bestActions = new Action();
+            bestActions.intArray = new int[mRiver.getNumReaches()];
+            for (final Reach reach : state.getReaches()) {
+                bestActions.intArray[reach.getIndex()] = getBestAction(keys.get(reach));
+            }
+
+            for (final Reach reach : state.getReaches()) {
+                final int reachIndex = reach.getIndex();
+                final ReachKey reachKey = keys.get(reach);
+
+                final List<Integer> actions = reach.getValidActions();
+                for (final Integer action : actions) {
+                    final double Q = getQ(reachKey, action);
+
+                    final Action localAction = new Action();
+                    localAction.intArray = Arrays.copyOf(bestActions.intArray, numReaches);
+                    localAction.intArray[reachIndex] = action;
+
+                    final RiverState expectedNextState = mModel.getExpectedNextState(state, localAction);
+
+                    final double reward = mModel.getReachReward(expectedNextState.getReach(reachIndex))
+                            + mModel.getSingleActionReward(reach, action);
+
+                    final Action bestNextActions = mModel.getBestAction(expectedNextState);
+                    final double maxNextQ = getQ(keys.get(expectedNextState.getReach(reachIndex)),
+                            bestNextActions.intArray[reachIndex]);
+
+                    putQ(reachKey, action, Q + LEARNING_RATE * (reward + DISCOUNT * maxNextQ - Q));
+                }
             }
         }
-
-        return null;
-    }
-
-    private double getQ(final ReachKey reachKey, final int action) {
-        final HashMap<Integer, Double> actionMap = mQ.get(reachKey);
-        if (actionMap == null) {
-            return 0;
-        }
-        return actionMap.get(actionMap);
     }
 
     private void putQ(final ReachKey reachKey, final int action, final double value) {
@@ -144,6 +134,33 @@ public class SparseCooperativeAgent implements AgentInterface {
         }
 
         actionMap.put(action, value);
+    }
+
+    private double getQ(final ReachKey reachKey, final int action) {
+        final HashMap<Integer, Double> actionMap = mQ.get(reachKey);
+        if (actionMap == null) {
+            return 0;
+        }
+        return (actionMap.containsKey(actionMap) ? actionMap.get(actionMap) : 0);
+    }
+
+    private Integer getBestAction(final ReachKey reachKey) {
+        final HashMap<Integer, Double> actionMap = mQ.get(reachKey);
+        if (actionMap == null) {
+            return Utilities.ACTION_NOTHING;
+        }
+
+        Integer bestAction = null;
+        Double bestQ = Double.NEGATIVE_INFINITY;
+        for (final Integer action : actionMap.keySet()) {
+            final Double Q = actionMap.get(action);
+            if (Q > bestQ) {
+                bestAction = action;
+                bestQ = Q;
+            }
+        }
+
+        return (bestAction != null ? bestAction : Utilities.ACTION_NOTHING);
     }
 
     /**
@@ -242,16 +259,6 @@ public class SparseCooperativeAgent implements AgentInterface {
 
             return mIndex == reachKey.mIndex && mCategories.equals(reachKey.mCategories);
         }
-    }
-
-    /**
-     * Load our agent with the AgentLoader and automatically connect to the rl_glue server.
-     * 
-     * @param args
-     */
-    public static void main(final String[] args) {
-        AgentLoader theLoader = new AgentLoader(new SparseCooperativeAgent());
-        theLoader.run();
     }
 
 }

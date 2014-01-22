@@ -3,6 +3,7 @@ package nl.uva.species.model;
 import java.util.Arrays;
 import java.util.Set;
 
+import nl.uva.species.utils.Pair;
 import nl.uva.species.utils.Utilities;
 
 import org.apache.commons.math3.linear.RealVector;
@@ -415,8 +416,8 @@ public class EnvModel {
                 // During eradication/restoration, invaded habitats may die and/or come to life and
                 // native species may die
                 deathsNative = reachNative * mDeathRateNative;
-                deathsInvaded = reachInvaded * mEradicationRate * (1 - mRestorationRate);
-                growthsNative = reachInvaded * mEradicationRate * mRestorationRate;
+                deathsInvaded = reachInvaded * mEradicationRate;
+                growthsNative = deathsInvaded * mRestorationRate;
                 break;
 
             case Utilities.ACTION_NOTHING:
@@ -840,6 +841,62 @@ public class EnvModel {
     }
 
     /**
+     * Brute-force method to determine the best possible action, considering a horizon of 1.
+     * 
+     * @param riverState
+     *            The current state
+     * @param model
+     *            The current model
+     * 
+     * @return The best possible action
+     */
+    public Action getBestAction(final RiverState riverState) {
+        return getBestAction(riverState, 0, new int[riverState.getReaches().size()]).getLeft();
+    }
+
+    /**
+     * Search recursive through all possible actions to determine the best action.
+     * 
+     * @param riverState
+     *            The current state
+     * @param reachPosition
+     *            The position which needs to be set next
+     * @param action
+     *            The so far action list
+     * @param model
+     *            The current model
+     * 
+     * @return Returns the best action with its rewards value
+     */
+    private Pair<Action, Double> getBestAction(final RiverState riverState, final int reachPosition, final int[] action) {
+        if (reachPosition == riverState.getReaches().size()) {
+            Action current = new Action();
+            current.intArray = action;
+
+            double reward = getExpectedNextStateReward(riverState, current) + getActionReward(riverState, current);
+
+            return new Pair<Action, Double>(current, reward);
+        }
+
+        Reach currentReach = riverState.getReach(reachPosition);
+        Pair<Action, Double> temp = null, resultAction = null;
+        for (Integer a : currentReach.getValidActions()) {
+            action[currentReach.getIndex()] = a;
+
+            temp = getBestAction(riverState, reachPosition + 1, action);
+
+            if (resultAction == null || resultAction.getRight() < temp.getRight()) {
+                Action best = new Action();
+                best.intArray = Arrays.copyOf(temp.getLeft().intArray, temp.getLeft().intArray.length);
+
+                resultAction = new Pair<Action, Double>(best, temp.getRight());
+            }
+        }
+
+        return resultAction;
+    }
+
+    /**
      * Checks if all reaches are above the activated threshold and thus do not seem to have
      * exogenous germination.
      * 
@@ -903,4 +960,14 @@ public class EnvModel {
         int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length + Parameter.values().length;
         return result / totalParameterCount;
     }
+
+    /**
+     * Retrieves the river that this model was based on.
+     * 
+     * @return The model's river
+     */
+    public River getRiver() {
+        return mRiver;
+    }
+
 }

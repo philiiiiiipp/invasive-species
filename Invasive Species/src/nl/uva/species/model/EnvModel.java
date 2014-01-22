@@ -10,8 +10,14 @@ import org.jgap.impl.DoubleGene;
 import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
 
+/**
+ * A model that represents the environment's parameters.
+ */
 public class EnvModel {
 
+    /**
+     * Parameters that genes contain and link to EnvModel parameters.
+     */
     public enum Parameter {
         ENDO_TAMARISK,
         UPSTREAM_RATE,
@@ -86,12 +92,22 @@ public class EnvModel {
     private double mDeathRateNative = 0.2;
 
     /**
+     * Prepares a model for the given river with default parameters.
+     * 
+     * @param river
+     *            The river to base the model on
+     */
+    public EnvModel(final River river) {
+        this(river, false);
+    }
+
+    /**
      * Prepares a model for the given river.
      * 
      * @param river
      *            The river to base the model on
      * @param randomlyInitialised
-     *            If true all parameters get randomly initialized
+     *            Iff true all parameters get randomly initialised
      */
     public EnvModel(final River river, final boolean randomlyInitialised) {
         mRiver = river;
@@ -124,6 +140,14 @@ public class EnvModel {
         }
     }
 
+    /**
+     * Prepares a model for the given river based on a chromosome's genes.
+     * 
+     * @param river
+     *            The river to base the model on
+     * @param genes
+     *            The genes that contain the model parameters
+     */
     public EnvModel(final River river, final DoubleGene[] genes) {
         mRiver = river;
 
@@ -275,8 +299,8 @@ public class EnvModel {
             final double endoNativeWeight = endoToExoRatio * (1 - mEndoTamarisk);
 
             // Calculate the reproduction scores for Tamarisk and native trees
-            int tamariskScore = reach.getHabitatsInvaded();
-            int nativeScore = reach.getHabitatsNative();
+            double tamariskScore = reach.getHabitatsInvaded();
+            double nativeScore = reach.getHabitatsNative();
             final Reach parent = reach.getParent();
             if (parent != null) {
                 // Add the parent's scores
@@ -326,7 +350,7 @@ public class EnvModel {
     }
 
     /**
-     * Calculates the expected average reward for the state resulting of the actions.
+     * Calculates the expected average reward for the state resulting of performing the actions.
      * 
      * @param state
      *            The initial state
@@ -337,6 +361,25 @@ public class EnvModel {
      */
     public double getExpectedNextStateReward(final RiverState state, final Action actions) {
         double reward = 0;
+
+        for (final Reach reach : getExpectedNextState(state, actions).getReaches()) {
+            reward += getReachReward(reach);
+        }
+
+        return reward;
+    }
+
+    /**
+     * Calculates the expected average state after performing the actions on the given state.
+     * 
+     * @param state
+     *            The initial state
+     * @param actions
+     *            The actions to be taken
+     * 
+     * @return The expected average state after performing the actions
+     */
+    public RiverState getExpectedNextState(final RiverState state, final Action actions) {
         final int reachSize = mRiver.getReachSize();
         final int numReaches = mRiver.getNumReaches();
         final double[] reachesInvaded = new double[numReaches];
@@ -345,9 +388,9 @@ public class EnvModel {
 
         // Perform the action on the different reaches
         for (final Reach reach : state.getReaches()) {
-            final int reachInvaded = reach.getHabitatsInvaded();
-            final int reachNative = reach.getHabitatsNative();
-            final int reachEmpty = reach.getHabitatsEmpty();
+            final double reachInvaded = reach.getHabitatsInvaded();
+            final double reachNative = reach.getHabitatsNative();
+            final double reachEmpty = reach.getHabitatsEmpty();
 
             double deathsInvaded = 0;
             double deathsNative = 0;
@@ -388,17 +431,16 @@ public class EnvModel {
             reachesEmpty[reach.getIndex()] = reachEmpty - growthsNative + deathsInvaded + deathsNative;
         }
 
-        // Germinate empty habitats and calculate reward
+        // Germinate empty habitats
+        final double[] expectedReachesInvaded = new double[numReaches];
+        final double[] expectedReachesNative = new double[numReaches];
+        final double[] expectedReachesEmpty = new double[numReaches];
         for (final Reach reach : state.getReaches()) {
             final int index = reach.getIndex();
 
             double reachInvaded = reachesInvaded[index];
+            double reachNative = reachesNative[index];
             double reachEmpty = reachesEmpty[index];
-
-            // Skip full reaches
-            if (reachEmpty == 0) {
-                continue;
-            }
 
             final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
 
@@ -447,15 +489,16 @@ public class EnvModel {
 
                 // Update the habitats with the new regrown tree
                 reachInvaded += reachEmpty * tamariskChanceNorm;
+                reachNative += reachEmpty * (1 - tamariskChanceNorm);
                 reachEmpty = 0;
             }
 
-            // Adjust the reward for this reach
-            reward -= (mCostInvadedReach * (reachInvaded > 1 ? 1 : reachInvaded) + mCostHabitatTamarisk * reachInvaded);
-            reward -= mCostHabitatEmpty * reachEmpty;
+            expectedReachesInvaded[index] = reachInvaded;
+            expectedReachesNative[index] = reachNative;
+            expectedReachesEmpty[index] = reachEmpty;
         }
 
-        return reward;
+        return new RiverState(mRiver, expectedReachesInvaded, expectedReachesNative, expectedReachesEmpty);
     }
 
     /**
@@ -691,7 +734,7 @@ public class EnvModel {
             final Reach reach = state.getReach(i);
 
             // Subtract the cost generated by the current plants
-            final int habitatsInvaded = reach.getHabitatsInvaded();
+            final double habitatsInvaded = reach.getHabitatsInvaded();
             if (habitatsInvaded > 0) {
                 reward -= (mCostInvadedReach + mCostHabitatTamarisk * habitatsInvaded);
             }
@@ -717,48 +760,83 @@ public class EnvModel {
      * @return The reward of the transition
      */
     public double getActionReward(final RiverState state, final Action actions) {
-        double actionCost = 0;
+        double reward = 0;
         final int numReaches = mRiver.getNumReaches();
 
         // Calculate the cost for every reach
         for (int i = 0; i < numReaches; ++i) {
-            final int action = actions.intArray[i];
-            final Reach reach = state.getReach(i);
-
-            // Subtract the cost of the actions performed
-            switch (action) {
-            case Utilities.ACTION_ERADICATE:
-                if (reach.getHabitatsInvaded() == 0) {
-                    // Can't eradicate a reach without Tamarisk plants
-                    return mRiver.getPenalty();
-                }
-                actionCost += mCostEradicate + mCostVariableEradicate * reach.getHabitatsInvaded();
-                break;
-
-            case Utilities.ACTION_RESTORE:
-                if (reach.getHabitatsEmpty() == 0) {
-                    // Can't restore a reach without empty habitats
-                    return mRiver.getPenalty();
-                }
-                actionCost += mCostRestorate + mCostVariableRestorate * reach.getHabitatsEmpty();
-                break;
-
-            case Utilities.ACTION_ERADICATE_RESTORE:
-                if (reach.getHabitatsInvaded() == 0) {
-                    // Can't eradicate a reach without Tamarisk plants
-                    return mRiver.getPenalty();
-                }
-                actionCost += mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded();
-                break;
-            }
+            reward += getSingleActionReward(state.getReach(i), actions.intArray[i]);
         }
 
         // Penalty for crossing the budget
-        if (actionCost > mRiver.getBudget()) {
+        if (Math.abs(reward) > mRiver.getBudget()) {
             return mRiver.getPenalty();
         }
 
+        return reward;
+    }
+
+    /**
+     * Retrieve the reward for performing an action on a single reach.
+     * 
+     * @param reach
+     *            The reach to perform the action on
+     * @param actions
+     *            The action to perform
+     * 
+     * @return The reward of the transition
+     */
+    public double getSingleActionReward(final Reach reach, final int action) {
+        double actionCost = 0;
+
+        switch (action) {
+        case Utilities.ACTION_ERADICATE:
+            if (reach.getHabitatsInvaded() == 0) {
+                // Can't eradicate a reach without Tamarisk plants
+                return mRiver.getPenalty();
+            }
+            actionCost += mCostEradicate + mCostVariableEradicate * reach.getHabitatsInvaded();
+            break;
+
+        case Utilities.ACTION_RESTORE:
+            if (reach.getHabitatsEmpty() == 0) {
+                // Can't restore a reach without empty habitats
+                return mRiver.getPenalty();
+            }
+            actionCost += mCostRestorate + mCostVariableRestorate * reach.getHabitatsEmpty();
+            break;
+
+        case Utilities.ACTION_ERADICATE_RESTORE:
+            if (reach.getHabitatsInvaded() == 0) {
+                // Can't eradicate a reach without Tamarisk plants
+                return mRiver.getPenalty();
+            }
+            actionCost += mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded();
+            break;
+        }
+
         return -actionCost;
+    }
+
+    /**
+     * Calculates the reward for a reach's state.
+     * 
+     * @param reach
+     *            The reach
+     * 
+     * @return The reward of the reach's state
+     */
+    public double getReachReward(final Reach reach) {
+        double reward = 0;
+
+        final double reachInvaded = reach.getHabitatsInvaded();
+        final double reachEmpty = reach.getHabitatsEmpty();
+
+        // Adjust the reward for this reach
+        reward -= (mCostInvadedReach * (reachInvaded > 1 ? 1 : reachInvaded) + mCostHabitatTamarisk * reachInvaded);
+        reward -= mCostHabitatEmpty * reachEmpty;
+
+        return reward;
     }
 
     /**
@@ -777,14 +855,14 @@ public class EnvModel {
     }
 
     /**
-     * Sets the cost parameters
+     * Sets the cost parameters.
      * 
      * @param costParameters
      *            must be a RealVector with the following entries: (costHabitatTamarisk,
      *            costHabitatEmpty, costInvadedReach, costEradicate, costRestorate,
      *            costVariableEradicate, costVariableRestore, costVariableEradicateRestore)
      */
-    public void setCostParameters(RealVector costParameters) {
+    public void setCostParameters(final RealVector costParameters) {
         mCostHabitatTamarisk = costParameters.getEntry(0);
         mCostHabitatEmpty = costParameters.getEntry(1);
         mCostInvadedReach = costParameters.getEntry(2);
@@ -796,11 +874,12 @@ public class EnvModel {
     }
 
     /**
-     * Returns the average euclidean distance between this model an another
+     * Returns the average Euclidean distance between this model an another
      * 
      * @param second
      *            The model to be compared to
-     * @return The euclidean distance between 0-1;
+     * 
+     * @return The Euclidean distance between 0-1;
      */
     public double compareTo(final EnvModel second) {
         double result = 0;
@@ -821,7 +900,7 @@ public class EnvModel {
         result += Math.abs(mDeathRateTamarisk - second.mDeathRateTamarisk);
         result += Math.abs(mDeathRateNative - second.mDeathRateNative);
 
-        int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length + 7;
+        int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length + Parameter.values().length;
         return result / totalParameterCount;
     }
 }

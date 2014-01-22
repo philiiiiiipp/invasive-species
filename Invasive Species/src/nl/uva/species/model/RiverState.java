@@ -17,6 +17,15 @@ public class RiverState {
     /** The observation used for this state */
     private final Observation mObservation;
 
+    /** The amount of habitats invaded by Tamarisk plants in each reach */
+    private final double[] mHabitatsInvaded;
+
+    /** The amount of habitats containing natural plants in each reach */
+    private final double[] mHabitatsNative;
+
+    /** The amount of empty habitats in each reach */
+    private final double[] mHabitatsEmpty;
+
     /** The reaches within this state */
     private final Map<Integer, Reach> mReaches = new HashMap<>();
 
@@ -34,6 +43,32 @@ public class RiverState {
     public RiverState(final River river, final Observation observation) {
         mRiver = river;
         mObservation = observation;
+        mHabitatsInvaded = null;
+        mHabitatsNative = null;
+        mHabitatsEmpty = null;
+
+        mRootReach = generateReachAt(river.getRootIndex(), null);
+    }
+
+    /**
+     * Prepares a new river state based on the base structure and observation.
+     * 
+     * @param river
+     *            The river to use as base structure
+     * @param habitatsInvaded
+     *            The amount of habitats invaded by Tamarisk plants in this reach
+     * @param habitatsNatural
+     *            The amount of habitats containing natural plants in this reach
+     * @param habitatsEmpty
+     *            The amount of empty habitats in this reach
+     */
+    public RiverState(final River river, final double[] habitatsInvaded, final double[] habitatsNative,
+            final double[] habitatsEmpty) {
+        mRiver = river;
+        mObservation = null;
+        mHabitatsInvaded = habitatsInvaded;
+        mHabitatsNative = habitatsNative;
+        mHabitatsEmpty = habitatsEmpty;
 
         mRootReach = generateReachAt(river.getRootIndex(), null);
     }
@@ -54,8 +89,13 @@ public class RiverState {
         final int startPosition = reachSize * index;
 
         // Create the reach object and add it to the set of reaches
-        final Reach reach = new Reach(index, parent, Arrays.copyOfRange(mObservation.intArray, startPosition,
-                startPosition + reachSize));
+        final Reach reach;
+        if (mObservation != null) {
+            reach = new Reach(index, parent, Arrays.copyOfRange(mObservation.intArray, startPosition, startPosition
+                    + reachSize));
+        } else {
+            reach = new Reach(index, parent, mHabitatsInvaded[index], mHabitatsNative[index], mHabitatsEmpty[index]);
+        }
         mReaches.put(index, reach);
 
         // Generate the reach's children

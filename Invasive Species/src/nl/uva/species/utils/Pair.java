@@ -2,7 +2,7 @@ package nl.uva.species.utils;
 
 public class Pair<L, R> {
 
-	private final L mLeft;
+	private L mLeft;
 	private final R mRight;
 
 	public Pair(final L left, final R right) {
@@ -12,6 +12,10 @@ public class Pair<L, R> {
 
 	public L getLeft() {
 		return mLeft;
+	}
+
+	public void setLeft(final L left) {
+		mLeft = left;
 	}
 
 	public R getRight() {

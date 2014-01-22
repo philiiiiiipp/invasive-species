@@ -2,6 +2,7 @@ package nl.uva.species.genetic.test;
 
 import nl.uva.species.genetic.GeneticModelCreator;
 import nl.uva.species.model.EnvModel;
+import nl.uva.species.model.Reach;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
 import nl.uva.species.utils.Utilities;
@@ -11,6 +12,15 @@ import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
 
 public class GeneticModelCreatorTest {
+
+	/** The amount of nothing action taken during learning */
+	private static final int AMOUNT_NOTHING_ACTION = 100;
+
+	/** The amount of eradicate action taken during learning */
+	private static final int AMOUNT_ERADICATE_ACTION = 100;
+
+	/** The amount of eradicate and restore action taken during learning */
+	private static final int AMOUNT_ERADICATE_RESTORE_ACTION = 100;
 
 	public static void main(final String[] args) {
 		testGeneratedModel();
@@ -29,18 +39,21 @@ public class GeneticModelCreatorTest {
 
 		RiverState oldState = new RiverState(testRiver, startObservation);
 
-		Action lastAction = genereateActions(startObservation);
+		Action lastAction = getHeuristicNextAction(oldState, 0, AMOUNT_NOTHING_ACTION, AMOUNT_ERADICATE_ACTION,
+				AMOUNT_ERADICATE_RESTORE_ACTION);
 		RiverState newState = trueModel.getPossibleNextState(oldState, lastAction);
 
 		GeneticModelCreator gModel = new GeneticModelCreator(testRiver);
 
-		int simulationSteps = 1000;
+		int simulationSteps = 10000;
+		gModel.finishEpisode();
 		gModel.addRiverState(oldState);
 		gModel.addRiverState(newState);
 		gModel.addAction(lastAction);
 
 		for (int i = 0; i < simulationSteps; ++i) {
-			lastAction = genereateActions(newState.getObservation());
+			lastAction = getHeuristicNextAction(newState, i, AMOUNT_NOTHING_ACTION, AMOUNT_ERADICATE_ACTION,
+					AMOUNT_ERADICATE_RESTORE_ACTION);
 			newState = trueModel.getPossibleNextState(newState, lastAction);
 
 			gModel.addRiverState(newState);
@@ -48,22 +61,6 @@ public class GeneticModelCreatorTest {
 		}
 
 		EnvModel generatedModel = gModel.getBestModel(testRiver);
-
-		GeneticModelCreator gModel2 = new GeneticModelCreator(testRiver);
-
-		gModel2.addRiverState(oldState);
-		gModel2.addRiverState(newState);
-		gModel2.addAction(lastAction);
-
-		for (int i = 0; i < simulationSteps; ++i) {
-			lastAction = genereateActions(newState.getObservation());
-			newState = generatedModel.getPossibleNextState(newState, lastAction);
-
-			gModel2.addRiverState(newState);
-			gModel2.addAction(lastAction);
-		}
-
-		EnvModel generatedModel2 = gModel2.getBestModel(testRiver);
 
 		System.out.println("Distance true <-> generated is: " + generatedModel.compareTo(trueModel));
 
@@ -91,58 +88,66 @@ public class GeneticModelCreatorTest {
 			oldState = newState;
 		}
 		System.out.println("Eval true vs. true: " + evaluation);
+	}
 
-		oldState = new RiverState(testRiver, startObservation);
-		// EnvModel randomModel = new EnvModel(testRiver, true);
-		evaluation = 0;
-		for (int i = 0; i < comparisonSteps; ++i) {
-			lastAction = genereateActions(oldState.getObservation());
-			newState = trueModel.getPossibleNextState(oldState, lastAction);
+	/**
+	 * Clever heuristic in order to determine a good model with our genetic algorihm's
+	 * 
+	 * @param rState
+	 *            The current river state
+	 * @param currentTimestep
+	 *            The current timestep
+	 * @param nothingActionAmount
+	 *            The amount of nothing actions which should be performed
+	 * @param eradicateActionAmount
+	 *            The amount of eradicate actions which should be performed
+	 * @param eradicateRestoreActionAmount
+	 *            The amount of eradicate and restore actions that should be performed
+	 * @return The action which will presumably give us the most knowledge about the real model
+	 */
+	public static Action getHeuristicNextAction(final RiverState rState, final int currentTimestep,
+			final int nothingActionAmount, final int eradicateActionAmount, final int eradicateRestoreActionAmount) {
 
-			evaluation += generatedModel2.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
+		int[] resultAction = new int[rState.getReaches().size()];
+		int total = nothingActionAmount + eradicateActionAmount + eradicateRestoreActionAmount;
 
-			oldState = newState;
+		if (currentTimestep == 0) {
+			// First action, always restore
+			for (Reach reach : rState.getReaches()) {
+				if (reach.getHabitatsEmpty() > 0) {
+					resultAction[reach.getIndex()] = Utilities.ACTION_RESTORE;
+				} else {
+					resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+				}
+			}
+		} else if (currentTimestep % total < nothingActionAmount) {
+			// Nothing
+			for (Reach reach : rState.getReaches()) {
+				resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+			}
+		} else if (currentTimestep % total < eradicateActionAmount) {
+			// Eradicate
+			for (Reach reach : rState.getReaches()) {
+				if (reach.getValidActions().contains(Utilities.ACTION_ERADICATE)) {
+					resultAction[reach.getIndex()] = Utilities.ACTION_ERADICATE;
+				} else {
+					resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+				}
+			}
+		} else {
+			// Eradicate + Restore
+			for (Reach reach : rState.getReaches()) {
+				if (reach.getValidActions().contains(Utilities.ACTION_ERADICATE_RESTORE)) {
+					resultAction[reach.getIndex()] = Utilities.ACTION_ERADICATE_RESTORE;
+				} else {
+					resultAction[reach.getIndex()] = Utilities.ACTION_NOTHING;
+				}
+			}
 		}
-		System.out.println("Eval gen2 vs. true: " + evaluation);
 
-		oldState = new RiverState(testRiver, startObservation);
-		// EnvModel randomModel = new EnvModel(testRiver, true);
-		evaluation = 0;
-		for (int i = 0; i < comparisonSteps; ++i) {
-			lastAction = genereateActions(oldState.getObservation());
-			newState = generatedModel.getPossibleNextState(oldState, lastAction);
-
-			evaluation += generatedModel2.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
-
-			oldState = newState;
-		}
-		System.out.println("Eval gen2 vs. gen1: " + evaluation);
-
-		oldState = new RiverState(testRiver, startObservation);
-		// EnvModel randomModel = new EnvModel(testRiver, true);
-		evaluation = 0;
-		for (int i = 0; i < comparisonSteps; ++i) {
-			lastAction = genereateActions(oldState.getObservation());
-			newState = generatedModel.getPossibleNextState(oldState, lastAction);
-
-			evaluation += generatedModel.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
-
-			oldState = newState;
-		}
-		System.out.println("Eval gen1 vs. gen1: " + evaluation);
-
-		oldState = new RiverState(testRiver, startObservation);
-		// EnvModel randomModel = new EnvModel(testRiver, true);
-		evaluation = 0;
-		for (int i = 0; i < comparisonSteps; ++i) {
-			lastAction = genereateActions(oldState.getObservation());
-			newState = generatedModel2.getPossibleNextState(oldState, lastAction);
-
-			evaluation += generatedModel2.evaluateModel(oldState, lastAction, newState) / comparisonSteps;
-
-			oldState = newState;
-		}
-		System.out.println("Eval gen2 vs. gen2: " + evaluation);
+		Action action = new Action();
+		action.intArray = resultAction;
+		return action;
 	}
 
 	/**

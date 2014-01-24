@@ -44,10 +44,14 @@ public abstract class AbstractLearnerAgent extends AbstractAgent {
 			Action current = new Action();
 			current.intArray = action;
 
-			double reward = model.getExpectedNextStateReward(riverState, current)
-					+ model.getActionReward(riverState, current);
+			double stateReward = model.getExpectedNextStateReward(riverState, current);
+			double actionReward = model.getActionReward(riverState, current);
+			System.out.println(stateReward + " Action: " + actionReward);
 
-			return new Pair<Action, Double>(current, reward);
+			stateReward *= 3;
+			stateReward += actionReward;
+
+			return new Pair<Action, Double>(current, stateReward);
 		}
 
 		Reach currentReach = riverState.getReach(reachPosition);

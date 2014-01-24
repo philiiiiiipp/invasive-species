@@ -1,10 +1,17 @@
 package nl.uva.species.genetic.test;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+import java.text.DecimalFormat;
+
+import javax.swing.JFrame;
+
 import nl.uva.species.genetic.GeneticModelCreator;
 import nl.uva.species.model.EnvModel;
 import nl.uva.species.model.Reach;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
+import nl.uva.species.ui.GraphInterface;
 import nl.uva.species.utils.Utilities;
 
 import org.rlcommunity.rlglue.codec.taskspec.TaskSpec;
@@ -23,7 +30,116 @@ public class GeneticModelCreatorTest {
 	private static final int AMOUNT_ERADICATE_RESTORE_ACTION = 100;
 
 	public static void main(final String[] args) {
-		testGeneratedModel();
+		test5();
+
+	}
+
+	public static void test5() {
+
+		GraphInterface mGraphInterface = new GraphInterface();
+
+		mGraphInterface.init();
+		JFrame frame = new JFrame();
+		frame.getContentPane().add(mGraphInterface);
+		frame.setTitle("The invasive species domain");
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.pack();
+		frame.setVisible(true);
+
+		try {
+			// Set the err output to /dev/null, most probable works only under linux/mac (Guess who wrote that). This is
+			// there to prevent the graph from spmaming the whole console.
+			System.setErr(new PrintStream("/dev/null"));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+
+		River testRiver = createRiver();
+		Observation startObservation = new Observation();
+		startObservation.intArray = new int[] { Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED,
+				Utilities.HABITAT_INVADED, Utilities.HABITAT_INVADED };
+
+		// startObservation.intArray = new int[] { Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE,
+		// Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE,
+		// Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE,
+		// Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE,
+		// Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE,
+		// Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE,
+		// Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE,
+		// Utilities.HABITAT_NATIVE, Utilities.HABITAT_NATIVE };
+
+		EnvModel trueModel = new EnvModel(testRiver, false);
+		RiverState state = new RiverState(testRiver, startObservation);
+
+		Action nextAction = new Action();
+
+		nextAction.intArray = new int[] { Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING,
+				Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING, Utilities.ACTION_NOTHING };
+
+		Action totalEradication = new Action();
+		totalEradication.intArray = new int[] { Utilities.ACTION_ERADICATE_RESTORE, Utilities.ACTION_ERADICATE_RESTORE,
+				Utilities.ACTION_ERADICATE_RESTORE, Utilities.ACTION_ERADICATE_RESTORE,
+				Utilities.ACTION_ERADICATE_RESTORE, Utilities.ACTION_ERADICATE_RESTORE,
+				Utilities.ACTION_ERADICATE_RESTORE };
+
+		mGraphInterface.update(state);
+		mGraphInterface.showActions(nextAction.intArray);
+
+		DecimalFormat df = new DecimalFormat("#.###");
+
+		int h = 0;
+		while (h < 100) {
+			h++;
+
+			for (Reach reach : state.getReaches()) {
+				if (reach.getValidActions().contains(Utilities.ACTION_ERADICATE_RESTORE)
+						&& reach.getHabitatsInvaded() >= 1) {
+					totalEradication.intArray[reach.getIndex()] = Utilities.ACTION_ERADICATE_RESTORE;
+
+				} else if (reach.getValidActions().contains(Utilities.ACTION_RESTORE)) {
+					totalEradication.intArray[reach.getIndex()] = Utilities.ACTION_RESTORE;
+
+				} else {
+					totalEradication.intArray[reach.getIndex()] = Utilities.ACTION_NOTHING;
+				}
+			}
+
+			double nothingState = trueModel.getExpectedNextStateReward(state, nextAction);
+			double eradicationState = trueModel.getExpectedNextStateReward(state, totalEradication)
+					+ trueModel.getActionReward(state, totalEradication);
+
+			System.out.print(df.format(eradicationState) + " - " + df.format(nothingState) + " = "
+					+ (eradicationState - nothingState) + " ");
+
+			if (eradicationState - nothingState > -0.01) {
+				System.out.println(" Eradication");
+				state = trueModel.getPossibleNextState(state, totalEradication);
+				mGraphInterface.update(state);
+				mGraphInterface.removeActions();
+				mGraphInterface.showActions(totalEradication.intArray);
+			} else {
+				System.out.println(" Nothing");
+				state = trueModel.getPossibleNextState(state, nextAction);
+				mGraphInterface.update(state);
+				mGraphInterface.removeActions();
+				mGraphInterface.showActions(nextAction.intArray);
+			}
+
+			try {
+				Thread.sleep(5000);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
 
 	/**
@@ -45,7 +161,7 @@ public class GeneticModelCreatorTest {
 
 		GeneticModelCreator gModel = new GeneticModelCreator(testRiver);
 
-		int simulationSteps = 10000;
+		int simulationSteps = 2500;
 		gModel.finishEpisode();
 		gModel.addRiverState(oldState);
 		gModel.addRiverState(newState);
@@ -60,9 +176,10 @@ public class GeneticModelCreatorTest {
 			gModel.addAction(lastAction);
 		}
 
-		EnvModel generatedModel = gModel.getBestModel(testRiver);
+		EnvModel generatedModel = gModel.getBestModel(testRiver, trueModel);
 
-		System.out.println("Distance true <-> generated is: " + generatedModel.compareTo(trueModel));
+		System.out.println("Distance true <-> generated");
+		trueModel.printComparison(generatedModel);
 
 		int comparisonSteps = 100;
 		oldState = new RiverState(testRiver, startObservation);

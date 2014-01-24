@@ -1,12 +1,13 @@
 package nl.uva.species.model;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Set;
 
+import nl.uva.species.genetic.SuperGene;
 import nl.uva.species.utils.Utilities;
 
 import org.apache.commons.math3.linear.RealVector;
-import org.jgap.impl.DoubleGene;
 import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
 
@@ -71,13 +72,13 @@ public class EnvModel {
 	private double mUpstreamRate = 0.1;
 
 	/** The factor affecting the chance that trees spread to parents */
-	private double mDownstreamRate = 0.5;
+	private double mDownstreamRate = 0.1;
 
 	/** The chance that eradication succeeds */
-	private double mEradicationRate = 0.85;
+	private double mEradicationRate = 1;
 
 	/** The chance that restoration succeeds */
-	private double mRestorationRate = 0.65;
+	private double mRestorationRate = 1;
 
 	/** The chance that a Tamarisk plant randomly dies */
 	private double mDeathRateTamarisk = 0.2;
@@ -124,7 +125,7 @@ public class EnvModel {
 		}
 	}
 
-	public EnvModel(final River river, final DoubleGene[] genes) {
+	public EnvModel(final River river, final SuperGene[] genes) {
 		mRiver = river;
 
 		mEndoTamarisk = genes[Parameter.ENDO_TAMARISK.ordinal()].doubleValue();
@@ -394,7 +395,7 @@ public class EnvModel {
 				// During eradication/restoration, invaded habitats may die and/or come to life and
 				// native species may die
 				deathsNative = reachNative * mDeathRateNative;
-				deathsInvaded = reachInvaded * mEradicationRate * (1 - mRestorationRate);
+				deathsInvaded = reachInvaded * mEradicationRate; // * (1 - mRestorationRate);
 				growthsNative = reachInvaded * mEradicationRate * mRestorationRate;
 				break;
 
@@ -416,11 +417,6 @@ public class EnvModel {
 
 			double reachInvaded = reachesInvaded[index];
 			double reachEmpty = reachesEmpty[index];
-
-			// Skip full reaches
-			if (reachEmpty == 0) {
-				continue;
-			}
 
 			final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
 
@@ -459,7 +455,7 @@ public class EnvModel {
 				nativeScore += reachesNative[childIndex] * Math.pow(mDownstreamRate, 2);
 			}
 
-			// Determine the chance of each plant and normalise
+			// Determine the chance of each plant and normalize
 			final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore / (5 * reachSize);
 			final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore / (5 * reachSize);
 			final double chanceSum = tamariskChance + nativeChance;
@@ -601,11 +597,6 @@ public class EnvModel {
 		for (final Reach reach : state.getReaches()) {
 			final int reachIndex = reach.getIndex();
 
-			// Skip full reaches
-			if (reachesEmpty[reachIndex] == 0) {
-				continue;
-			}
-
 			final int index = reach.getIndex();
 
 			final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
@@ -672,25 +663,36 @@ public class EnvModel {
 			for (int i = 0; i < habitats.length; ++i) {
 				final int habitatIndex = reachIndex * reachSize + i;
 
+				final double x;
 				switch (habitats[i]) {
 				case Utilities.HABITAT_EMPTY:
+					x = habitatsEmpty[habitatIndex];
+					// reward += Math.sqrt(habitatsEmpty[habitatIndex]) + Math.sqrt(1 - habitatsEmpty[habitatIndex]);
 					// reward += (habitatsEmpty[habitatIndex] > 1 / 3 ? 1 : 0);
-					reward += habitatsEmpty[habitatIndex];
+					// reward += habitatsEmpty[habitatIndex];
 					break;
 				case Utilities.HABITAT_NATIVE:
+					x = habitatsNative[habitatIndex];
+					// reward += Math.sqrt(habitatsNative[habitatIndex]) + Math.sqrt(1 - habitatsNative[habitatIndex]);
 					// reward += (habitatsNative[habitatIndex] > 1 / 3 ? 1 : 0);
-					reward += habitatsNative[habitatIndex];
+					// reward += habitatsNative[habitatIndex];
 					break;
 				case Utilities.HABITAT_INVADED:
+					x = habitatsInvaded[habitatIndex];
+					// reward += Math.sqrt(habitatsInvaded[habitatIndex]) + Math.sqrt(1 -
+					// habitatsInvaded[habitatIndex]);
 					// reward += (habitatsInvaded[habitatIndex] > 1 / 3 ? 1 : 0);
-					reward += habitatsInvaded[habitatIndex];
+					// reward += habitatsInvaded[habitatIndex];
 					break;
+				default:
+					x = Double.NaN;
 				}
+				reward += -Math.pow((1 - x / 2), 2) - Math.pow((x / 2), 2);
 			}
 		}
 
 		// Return the normalised reward, based on the maximum score (1 per habitat)
-		return reward / numHabitats;
+		return 1 + reward / numHabitats;
 	}
 
 	/**
@@ -786,7 +788,7 @@ public class EnvModel {
 	/**
 	 * Checks if all reaches are above the activated threshold and thus do not seem to have exogenous germination.
 	 * 
-	 * @return True iff all reaches are purely endogenous
+	 * @return True if all reaches are purely endogenous
 	 */
 	public boolean isexogenousActivated() {
 		for (final double ratio : mExoToEndoRatio) {
@@ -844,5 +846,48 @@ public class EnvModel {
 
 		int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length + 7;
 		return result / totalParameterCount;
+	}
+
+	public void printComparison(final EnvModel second) {
+		DecimalFormat df = new DecimalFormat("#.####");
+
+		System.out.println("EndoTamarisk " + df.format(mEndoTamarisk) + " - " + df.format(second.mEndoTamarisk) + " = "
+				+ df.format(Math.abs(mEndoTamarisk - second.mEndoTamarisk)));
+
+		System.out.println("UpstreamRate " + df.format(mUpstreamRate) + " - " + df.format(second.mUpstreamRate) + " = "
+				+ df.format(Math.abs(mUpstreamRate - second.mUpstreamRate)));
+
+		System.out.println("DownstreamRate " + df.format(mDownstreamRate) + " - " + df.format(second.mDownstreamRate)
+				+ " = " + df.format(Math.abs(mDownstreamRate - second.mDownstreamRate)));
+
+		System.out.println("EradicationRate " + df.format(mEradicationRate) + " - "
+				+ df.format(second.mEradicationRate) + " = "
+				+ df.format(Math.abs(mEradicationRate - second.mEradicationRate)));
+
+		System.out.println("RestorationRate " + df.format(mRestorationRate) + " - "
+				+ df.format(second.mRestorationRate) + " = "
+				+ df.format(Math.abs(mRestorationRate - second.mRestorationRate)));
+
+		System.out.println("DeathRateTamarisk " + df.format(mDeathRateTamarisk) + " - "
+				+ df.format(second.mDeathRateTamarisk) + " = "
+				+ df.format(Math.abs(mDeathRateTamarisk - second.mDeathRateTamarisk)));
+
+		System.out.println("DeathRateNative " + df.format(mDeathRateNative) + " - "
+				+ df.format(second.mDeathRateNative) + " = "
+				+ df.format(Math.abs(mDeathRateNative - second.mDeathRateNative)));
+
+		System.out.println("== Exo To Endo ==");
+		for (int i = 0; i < mExoToEndoRatio.length; ++i) {
+			System.out.println(i + ": " + df.format(mExoToEndoRatio[i]) + " - " + df.format(second.mExoToEndoRatio[i])
+					+ " = " + df.format(Math.abs(mExoToEndoRatio[i] - second.mExoToEndoRatio[i])));
+		}
+
+		System.out.println("== Exo Tamarisk ==");
+		for (int i = 0; i < mExoTamarisk.length; ++i) {
+			System.out.println(i + ": " + df.format(mExoTamarisk[i]) + " - " + df.format(second.mExoTamarisk[i])
+					+ " = " + df.format(Math.abs(mExoTamarisk[i] - second.mExoTamarisk[i])));
+		}
+
+		System.out.println("Euclidean: " + compareTo(second));
 	}
 }

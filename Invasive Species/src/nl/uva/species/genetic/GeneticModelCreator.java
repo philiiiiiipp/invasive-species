@@ -15,7 +15,6 @@ import org.jgap.Genotype;
 import org.jgap.IChromosome;
 import org.jgap.InvalidConfigurationException;
 import org.jgap.impl.DefaultConfiguration;
-import org.jgap.impl.DoubleGene;
 import org.rlcommunity.rlglue.codec.types.Action;
 
 public class GeneticModelCreator {
@@ -28,9 +27,9 @@ public class GeneticModelCreator {
 	private final int mEvolutions;
 
 	/** The standard population size */
-	public final int STANDARD_POP_SIZE = 2000;
+	public final int STANDARD_POP_SIZE = 20;
 
-	public final int STANDARD_EVOLUTIONS = 2;
+	public final int STANDARD_EVOLUTIONS = 20;
 
 	private Genotype mGenotype;
 
@@ -68,7 +67,8 @@ public class GeneticModelCreator {
 
 		Genotype genotype = null;
 		try {
-			IChromosome sampleChromosome = new Chromosome(gaConf, new DoubleGene(gaConf, 0, 1), geneNumber);
+			// IChromosome sampleChromosome = new Chromosome(gaConf, new DoubleGene(gaConf, 0, 1), geneNumber);
+			IChromosome sampleChromosome = new Chromosome(gaConf, new SuperGene(gaConf), geneNumber);
 
 			gaConf.setAlwaysCaculateFitness(true);
 			gaConf.setSampleChromosome(sampleChromosome);
@@ -95,6 +95,7 @@ public class GeneticModelCreator {
 		}
 
 		IChromosome fittest = null;
+		double start = System.currentTimeMillis(), total = System.currentTimeMillis();
 		for (int evolution = 0; evolution < mEvolutions; evolution++) {
 			mGenotype.evolve();
 
@@ -103,27 +104,71 @@ public class GeneticModelCreator {
 
 			DecimalFormat df = new DecimalFormat("#.####");
 			for (int i = 0; i < GEN_NAMES.length; ++i) {
-				System.out.println(GEN_NAMES[i] + " \t "
-						+ df.format(((DoubleGene) fittest.getGenes()[i]).doubleValue()));
+				System.out
+						.println(GEN_NAMES[i] + " \t " + df.format(((SuperGene) fittest.getGenes()[i]).doubleValue()));
 			}
 
 			System.out.println("==ExoToEndoRatio==");
 			for (int i = GEN_NAMES.length; i < GEN_NAMES.length + river.getNumReaches(); ++i) {
 				System.out.println((i - GEN_NAMES.length) + ": "
-						+ df.format(((DoubleGene) fittest.getGenes()[i]).doubleValue()));
+						+ df.format(((SuperGene) fittest.getGenes()[i]).doubleValue()));
 			}
 
 			System.out.println("==ExoTamarisk==");
 			for (int i = GEN_NAMES.length + river.getNumReaches(); i < GEN_NAMES.length + 2 * river.getNumReaches(); ++i) {
 				System.out.println((i - (GEN_NAMES.length + river.getNumReaches())) + ": "
-						+ df.format(((DoubleGene) fittest.getGenes()[i]).doubleValue()));
+						+ df.format(((SuperGene) fittest.getGenes()[i]).doubleValue()));
 			}
 
 			System.out.println("Best fitness after: " + evolution + " steps "
 					+ mGenotype.getFittestChromosome().getFitnessValue());
+
+			System.out.println("Took: " + (System.currentTimeMillis() - start) / 1000 / 60 + " Minutes");
+			start = System.currentTimeMillis();
 		}
 
-		return new EnvModel(river, Arrays.copyOf(fittest.getGenes(), fittest.getGenes().length, DoubleGene[].class));
+		System.out.println("Total: " + (System.currentTimeMillis() - total) / 1000 / 60 + " Minutes");
+
+		return new EnvModel(river, Arrays.copyOf(fittest.getGenes(), fittest.getGenes().length, SuperGene[].class));
+	}
+
+	public EnvModel getBestModel(final River river, final EnvModel trueModel) {
+		int stateCounter = 0;
+		for (List<RiverState> riverList : mStates) {
+			stateCounter += riverList.size();
+		}
+
+		if (stateCounter < 3) {
+			// we have no data return our prior
+			return new EnvModel(river, false);
+		}
+
+		IChromosome fittest = null;
+		double start = System.currentTimeMillis(), total = System.currentTimeMillis();
+		for (int evolution = 0; evolution < mEvolutions; evolution++) {
+			mGenotype.evolve();
+
+			// Print summary
+			fittest = mGenotype.getFittestChromosome();
+
+			SuperGene[] genes = new SuperGene[fittest.getGenes().length];
+			for (int i = 0; i < fittest.getGenes().length; ++i) {
+				genes[i] = (SuperGene) fittest.getGene(i);
+			}
+
+			EnvModel model = new EnvModel(river, genes);
+			trueModel.printComparison(model);
+
+			System.out.println("Best fitness after: " + evolution + " steps "
+					+ mGenotype.getFittestChromosome().getFitnessValue());
+
+			System.out.println("Took: " + (System.currentTimeMillis() - start) / 1000 / 60 + " Minutes");
+			start = System.currentTimeMillis();
+		}
+
+		System.out.println("Total: " + (System.currentTimeMillis() - total) / 1000 / 60 + " Minutes");
+
+		return new EnvModel(river, Arrays.copyOf(fittest.getGenes(), fittest.getGenes().length, SuperGene[].class));
 	}
 
 	/**

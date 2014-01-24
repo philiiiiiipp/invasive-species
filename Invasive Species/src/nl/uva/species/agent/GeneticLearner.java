@@ -1,8 +1,5 @@
 package nl.uva.species.agent;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
-
 import javax.swing.JFrame;
 
 import nl.uva.species.genetic.GeneticModelCreator;
@@ -69,15 +66,15 @@ public class GeneticLearner extends AbstractLearnerAgent {
 		frame.pack();
 		frame.setVisible(true);
 
-		mCurrentModel = new EnvModel(mRiver, true);
+		mCurrentModel = new EnvModel(mRiver, false);
 
-		try {
-			// Set the err output to /dev/null, most probable works only under linux/mac (Guess who wrote that). This is
-			// there to prevent the graph from spmaming the whole console.
-			System.setErr(new PrintStream("/dev/null"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
+		// try {
+		// // Set the err output to /dev/null, most probable works only under linux/mac (Guess who wrote that). This is
+		// // there to prevent the graph from spmaming the whole console.
+		// System.setErr(new PrintStream("/dev/null"));
+		// } catch (FileNotFoundException e) {
+		// e.printStackTrace();
+		// }
 
 		if (mModelGenerator == null)
 			mModelGenerator = new GeneticModelCreator(mRiver);

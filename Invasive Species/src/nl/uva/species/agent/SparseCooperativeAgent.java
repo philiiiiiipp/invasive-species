@@ -84,17 +84,14 @@ public class SparseCooperativeAgent extends AbstractAgent {
         final int numHabitats = numReaches * mRiver.getReachSize();
         mQ.clear();
 
-        final int numStates = (int) (Math.pow(3, 5) * numReaches);
+        final HashMap<Integer, Set<Integer>> structure = mRiver.getStructure();
+        
         int runs = 0;
         int runsUnchanged = 0;
         while (++runsUnchanged < 50) {
             final int qSize = mQ.size();
-            // for (int runs = 0; runs < 500; ++runs) {
-            // System.out.print(" " + runs);
-            // if (runs % 20 == 0) {
-            // System.out.println();
-            // }
 
+            // Generate a random state
             final Observation observation = new Observation();
             observation.intArray = new int[numHabitats];
             for (int i = 0; i < numHabitats; ++i) {
@@ -102,44 +99,48 @@ public class SparseCooperativeAgent extends AbstractAgent {
             }
             final RiverState state = new RiverState(mRiver, observation);
 
+            // Cache keys for each reach
             final Map<Reach, ReachKey> keys = new HashMap<>();
             for (final Reach reach : state.getReaches()) {
                 keys.put(reach, new ReachKey(reach));
             }
 
+            // Generate global actions
             final Action randomActions = getRandomAction(state);
 
+            // Update the local Q(s,a) value for each reach
             for (final Reach reach : state.getReaches()) {
                 final int reachIndex = reach.getIndex();
                 final ReachKey reachKey = keys.get(reach);
 
+                // Update the local Q(s,a) value for each action
                 final List<Integer> actions = reach.getValidActions();
                 for (final Integer action : actions) {
                     final double qValue = getQ(reachKey, action);
 
+                    // Find the expected next state with the global random action and local specific action
                     final Action localActions = new Action();
                     localActions.intArray = Arrays.copyOf(randomActions.intArray, numReaches);
                     localActions.intArray[reachIndex] = action;
-
                     final RiverState expectedNextState = mModel.getExpectedNextState(state, localActions);
-                    // for (int j = 0; j < 10; ++j) {
-                    // final RiverState expectedNextState = mModel.getPossibleNextState(state,
-                    // localAction);
 
+                    // Get the reward of the reward of transitioning to the expected state
                     final double reward = mModel.getReachReward(expectedNextState.getReach(reachIndex))
                             + mModel.getSingleActionReward(reach, action);
 
+                    // Get the Q value of the optimal action in the expected state
                     final Action bestNextActions = mModel.getBestAction(expectedNextState);
                     final double maxNextQ = getQ(keys.get(expectedNextState.getReach(reachIndex)),
                             bestNextActions.intArray[reachIndex]);
 
+                    // Update Q
                     putQ(reachKey, action, qValue + LEARNING_RATE * (reward + DISCOUNT * maxNextQ - qValue));
-                    // }
                 }
             }
 
             System.out.print(mQ.size() + " ");
 
+            // Keep track of changes
             if (qSize != mQ.size()) {
                 runsUnchanged = 0;
             }
@@ -171,6 +172,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
     private Integer getBestAction(final ReachKey reachKey) {
         final HashMap<Integer, Double> actionMap = mQ.get(reachKey);
         if (actionMap == null) {
+            System.out.println("STATE NOT FOUND");
             return Utilities.ACTION_NOTHING;
         }
 

@@ -4,23 +4,18 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-
-import javax.swing.JFrame;
 
 import nl.uva.species.model.EnvModel;
 import nl.uva.species.model.Reach;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
-import nl.uva.species.ui.GraphInterface;
 import nl.uva.species.utils.Messages;
 import nl.uva.species.utils.Utilities;
 
-import org.rlcommunity.rlglue.codec.AgentInterface;
-import org.rlcommunity.rlglue.codec.taskspec.TaskSpec;
 import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
-import org.rlcommunity.rlglue.codec.util.AgentLoader;
 
 public class SparseCooperativeAgent extends AbstractAgent {
 
@@ -28,7 +23,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
     private static final double LEARNING_RATE = 0.2;
 
     /** The discount factor gamma as described in (16) by (Kok & Vlassis, 2006) */
-    private static final double DISCOUNT = 0.2;
+    private static final double DISCOUNT = 0.9;
 
     private River mRiver;
     private EnvModel mModel;
@@ -52,11 +47,20 @@ public class SparseCooperativeAgent extends AbstractAgent {
     public Action start(final Observation observation) {
         final RiverState state = new RiverState(mRiver, observation);
 
+        System.out.print("ACTION: ");
+
         final Action bestActions = new Action();
         bestActions.intArray = new int[mRiver.getNumReaches()];
         for (final Reach reach : state.getReaches()) {
-            bestActions.intArray[reach.getIndex()] = getBestAction(new ReachKey(reach));
+            if (reach.getHabitatsEmpty() > 0) {
+                bestActions.intArray[reach.getIndex()] = Utilities.ACTION_RESTORE;
+            } else {
+                bestActions.intArray[reach.getIndex()] = getBestAction(new ReachKey(reach));
+            }
+            System.out.print(bestActions.intArray[reach.getIndex()]);
         }
+
+        System.out.println();
 
         return bestActions;
     }
@@ -80,11 +84,21 @@ public class SparseCooperativeAgent extends AbstractAgent {
         final int numHabitats = numReaches * mRiver.getReachSize();
         mQ.clear();
 
-        for (int runs = 0; runs < 100; ++runs) {
+        final int numStates = (int) (Math.pow(3, 5) * numReaches);
+        int runs = 0;
+        int runsUnchanged = 0;
+        while (++runsUnchanged < 50) {
+            final int qSize = mQ.size();
+            // for (int runs = 0; runs < 500; ++runs) {
+            // System.out.print(" " + runs);
+            // if (runs % 20 == 0) {
+            // System.out.println();
+            // }
+
             final Observation observation = new Observation();
             observation.intArray = new int[numHabitats];
             for (int i = 0; i < numHabitats; ++i) {
-                observation.intArray[i] = Utilities.RNG.nextInt(2) + 2;
+                observation.intArray[i] = Utilities.RNG.nextInt(2) + 1;
             }
             final RiverState state = new RiverState(mRiver, observation);
 
@@ -112,6 +126,9 @@ public class SparseCooperativeAgent extends AbstractAgent {
                     localAction.intArray[reachIndex] = action;
 
                     final RiverState expectedNextState = mModel.getExpectedNextState(state, localAction);
+                    // for (int j = 0; j < 10; ++j) {
+                    // final RiverState expectedNextState = mModel.getPossibleNextState(state,
+                    // localAction);
 
                     final double reward = mModel.getReachReward(expectedNextState.getReach(reachIndex))
                             + mModel.getSingleActionReward(reach, action);
@@ -121,7 +138,18 @@ public class SparseCooperativeAgent extends AbstractAgent {
                             bestNextActions.intArray[reachIndex]);
 
                     putQ(reachKey, action, Q + LEARNING_RATE * (reward + DISCOUNT * maxNextQ - Q));
+                    // }
                 }
+            }
+
+            System.out.print(mQ.size() + " ");
+
+            if (qSize != mQ.size()) {
+                runsUnchanged = 0;
+            }
+
+            if (runs++ % 50 == 0) {
+                System.out.println();
             }
         }
     }
@@ -230,7 +258,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
                 return 0;
             }
 
-            if (reach.getNumHabitats() > reach.getNumHabitats() * 2) {
+            if (reach.getNumHabitats() > habitatsInvaded * 2) {
                 // Category 1 for little Tamarisk trees
                 return 1;
             } else {
@@ -256,8 +284,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
             }
 
             final ReachKey reachKey = (ReachKey) other;
-
-            return mIndex == reachKey.mIndex && mCategories.equals(reachKey.mCategories);
+            return mIndex == reachKey.mIndex && Objects.deepEquals(mCategories, reachKey.mCategories);
         }
     }
 

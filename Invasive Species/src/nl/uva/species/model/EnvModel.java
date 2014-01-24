@@ -60,7 +60,7 @@ public class EnvModel {
     private double mCostVariableEradicateRestorate = 0.1;
 
     /** Default value for each reach that there is exogenous germination */
-    private final double mDefaultExoToEndoRatio = 0.8;
+    private final double mDefaultExoToEndoRatio = 0.2;
 
     /** Default value for each reach that a Tamarisk plant grows from exogenous germination */
     private final double mDefaultExoTamarisk = 0.7;
@@ -443,13 +443,11 @@ public class EnvModel {
             double reachNative = reachesNative[index];
             double reachEmpty = reachesEmpty[index];
 
-            final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
-
             final double exoTamariskWeight = mExoToEndoRatio[index] * mExoTamarisk[index];
             final double exoNativeWeight = mExoToEndoRatio[index] * (1 - mExoTamarisk[index]);
 
-            final double endoTamarisWeight = endoToExoRatio * mEndoTamarisk;
-            final double endoNativeWeight = endoToExoRatio * (1 - mEndoTamarisk);
+            final double endoTamarisWeight = (1 - mExoToEndoRatio[index]) * mEndoTamarisk;
+            final double endoNativeWeight = (1 - mExoToEndoRatio[index]) * (1 - mEndoTamarisk);
 
             // Calculate the reproduction scores for Tamarisk and native trees
             double tamariskScore = reachesInvaded[index];
@@ -622,11 +620,6 @@ public class EnvModel {
         // Germination of empty habitats
         for (final Reach reach : state.getReaches()) {
             final int reachIndex = reach.getIndex();
-
-            // Skip full reaches
-            if (reachesEmpty[reachIndex] == 0) {
-                continue;
-            }
 
             final int index = reach.getIndex();
 
@@ -834,7 +827,8 @@ public class EnvModel {
         final double reachEmpty = reach.getHabitatsEmpty();
 
         // Adjust the reward for this reach
-        reward -= (mCostInvadedReach * (reachInvaded > 1 ? 1 : reachInvaded) + mCostHabitatTamarisk * reachInvaded);
+        reward -= mCostInvadedReach * (Math.tanh(2.5 * reachInvaded - 3) + 1) / 2;
+        reward -= mCostHabitatTamarisk * reachInvaded;
         reward -= mCostHabitatEmpty * reachEmpty;
 
         return reward;

@@ -64,8 +64,6 @@ public class GeneticLearner extends AbstractLearnerAgent {
         // frame.pack();
         // frame.setVisible(true);
 
-        mCurrentModel = new EnvModel(mRiver, true);
-
         // try {
         // Set the err output to /dev/null, most probable works only under linux/mac (Guess who
         // wrote that). This is

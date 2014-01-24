@@ -37,7 +37,7 @@ public class EnvModel {
     private final River mRiver;
 
     /** The cost per invaded reach */
-    private double mCostInvadedReach = 1;
+    private double mCostInvadedReach = 10;
 
     /** The cost per habitat containing a Tamarisk */
     private double mCostHabitatTamarisk = 0.1;
@@ -79,7 +79,7 @@ public class EnvModel {
     private double mUpstreamRate = 0.1;
 
     /** The factor affecting the chance that trees spread to parents */
-    private double mDownstreamRate = 0.5;
+    private double mDownstreamRate = 0.1;
 
     /** The chance that eradication succeeds */
     private double mEradicationRate = 1.0;

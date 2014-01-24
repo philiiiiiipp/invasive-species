@@ -107,11 +107,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
                 keys.put(reach, new ReachKey(reach));
             }
 
-            final Action bestActions = new Action();
-            bestActions.intArray = new int[mRiver.getNumReaches()];
-            for (final Reach reach : state.getReaches()) {
-                bestActions.intArray[reach.getIndex()] = getBestAction(keys.get(reach));
-            }
+            final Action randomActions = getRandomAction(state);
 
             for (final Reach reach : state.getReaches()) {
                 final int reachIndex = reach.getIndex();
@@ -119,13 +115,13 @@ public class SparseCooperativeAgent extends AbstractAgent {
 
                 final List<Integer> actions = reach.getValidActions();
                 for (final Integer action : actions) {
-                    final double Q = getQ(reachKey, action);
+                    final double qValue = getQ(reachKey, action);
 
-                    final Action localAction = new Action();
-                    localAction.intArray = Arrays.copyOf(bestActions.intArray, numReaches);
-                    localAction.intArray[reachIndex] = action;
+                    final Action localActions = new Action();
+                    localActions.intArray = Arrays.copyOf(randomActions.intArray, numReaches);
+                    localActions.intArray[reachIndex] = action;
 
-                    final RiverState expectedNextState = mModel.getExpectedNextState(state, localAction);
+                    final RiverState expectedNextState = mModel.getExpectedNextState(state, localActions);
                     // for (int j = 0; j < 10; ++j) {
                     // final RiverState expectedNextState = mModel.getPossibleNextState(state,
                     // localAction);
@@ -137,7 +133,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
                     final double maxNextQ = getQ(keys.get(expectedNextState.getReach(reachIndex)),
                             bestNextActions.intArray[reachIndex]);
 
-                    putQ(reachKey, action, Q + LEARNING_RATE * (reward + DISCOUNT * maxNextQ - Q));
+                    putQ(reachKey, action, qValue + LEARNING_RATE * (reward + DISCOUNT * maxNextQ - qValue));
                     // }
                 }
             }
@@ -189,6 +185,18 @@ public class SparseCooperativeAgent extends AbstractAgent {
         }
 
         return (bestAction != null ? bestAction : Utilities.ACTION_NOTHING);
+    }
+
+    private Action getRandomAction(final RiverState state) {
+        final Action randomActions = new Action();
+        randomActions.intArray = new int[mRiver.getNumReaches()];
+
+        for (final Reach reach : state.getReaches()) {
+            final List<Integer> validActions = reach.getValidActions();
+            randomActions.intArray[reach.getIndex()] = validActions.get(Utilities.RNG.nextInt(validActions.size()));
+        }
+
+        return randomActions;
     }
 
     /**

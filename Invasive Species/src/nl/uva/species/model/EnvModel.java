@@ -64,7 +64,7 @@ public class EnvModel {
     private final double mDefaultExoToEndoRatio = 0.2;
 
     /** Default value for each reach that a Tamarisk plant grows from exogenous germination */
-    private final double mDefaultExoTamarisk = 0.7;
+    private final double mDefaultExoTamarisk = 0.5;
 
     /** The chance for each reach that there is exogenous germination as opposed to endogenous */
     private double[] mExoToEndoRatio;
@@ -82,10 +82,10 @@ public class EnvModel {
     private double mDownstreamRate = 0.5;
 
     /** The chance that eradication succeeds */
-    private double mEradicationRate = 0.85;
+    private double mEradicationRate = 1.0;
 
     /** The chance that restoration succeeds */
-    private double mRestorationRate = 0.65;
+    private double mRestorationRate = 1.0;
 
     /** The chance that a Tamarisk plant randomly dies */
     private double mDeathRateTamarisk = 0.2;
@@ -707,7 +707,7 @@ public class EnvModel {
         }
 
         // Return the normalised reward, based on the maximum score (1 per habitat)
-        return 1 + 2 * reward / numHabitats;
+        return 2 * (1 + reward / numHabitats);
     }
 
     /**

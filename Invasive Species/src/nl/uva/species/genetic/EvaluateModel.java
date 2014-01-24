@@ -8,7 +8,6 @@ import nl.uva.species.model.RiverState;
 
 import org.jgap.FitnessFunction;
 import org.jgap.IChromosome;
-import org.jgap.impl.DoubleGene;
 import org.rlcommunity.rlglue.codec.types.Action;
 
 public class EvaluateModel extends FitnessFunction {
@@ -36,9 +35,9 @@ public class EvaluateModel extends FitnessFunction {
 	@Override
 	protected double evaluate(final IChromosome a_subject) {
 
-		DoubleGene[] genes = new DoubleGene[a_subject.getGenes().length];
+		SuperGene[] genes = new SuperGene[a_subject.getGenes().length];
 		for (int i = 0; i < a_subject.getGenes().length; ++i) {
-			genes[i] = (DoubleGene) a_subject.getGene(i);
+			genes[i] = (SuperGene) a_subject.getGene(i);
 		}
 
 		EnvModel model = new EnvModel(mRiver, genes);

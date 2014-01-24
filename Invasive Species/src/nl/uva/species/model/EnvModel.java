@@ -1,13 +1,14 @@
 package nl.uva.species.model;
 
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.Set;
 
+import nl.uva.species.genetic.SuperGene;
 import nl.uva.species.utils.Pair;
 import nl.uva.species.utils.Utilities;
 
 import org.apache.commons.math3.linear.RealVector;
-import org.jgap.impl.DoubleGene;
 import org.rlcommunity.rlglue.codec.types.Action;
 import org.rlcommunity.rlglue.codec.types.Observation;
 
@@ -149,7 +150,7 @@ public class EnvModel {
      * @param genes
      *            The genes that contain the model parameters
      */
-    public EnvModel(final River river, final DoubleGene[] genes) {
+    public EnvModel(final River river, final SuperGene[] genes) {
         mRiver = river;
 
         mEndoTamarisk = genes[Parameter.ENDO_TAMARISK.ordinal()].doubleValue();
@@ -687,25 +688,26 @@ public class EnvModel {
             for (int i = 0; i < habitats.length; ++i) {
                 final int habitatIndex = reachIndex * reachSize + i;
 
+                final double prediction;
                 switch (habitats[i]) {
                 case Utilities.HABITAT_EMPTY:
-                    // reward += (habitatsEmpty[habitatIndex] > 1 / 3 ? 1 : 0);
-                    reward += habitatsEmpty[habitatIndex];
+                    prediction = habitatsEmpty[habitatIndex];
                     break;
                 case Utilities.HABITAT_NATIVE:
-                    // reward += (habitatsNative[habitatIndex] > 1 / 3 ? 1 : 0);
-                    reward += habitatsNative[habitatIndex];
+                    prediction = habitatsNative[habitatIndex];
                     break;
                 case Utilities.HABITAT_INVADED:
-                    // reward += (habitatsInvaded[habitatIndex] > 1 / 3 ? 1 : 0);
-                    reward += habitatsInvaded[habitatIndex];
+                    prediction = habitatsInvaded[habitatIndex];
                     break;
+                default:
+                    prediction = Double.NaN;
                 }
+                reward += -Math.pow((1 - prediction / 2), 2) - Math.pow((prediction / 2), 2);
             }
         }
 
         // Return the normalised reward, based on the maximum score (1 per habitat)
-        return reward / numHabitats;
+        return 1 + 2 * reward / numHabitats;
     }
 
     /**
@@ -964,4 +966,46 @@ public class EnvModel {
         return mRiver;
     }
 
+    public void printComparison(final EnvModel second) {
+        final DecimalFormat df = new DecimalFormat("#.####");
+
+        System.out.println("EndoTamarisk " + df.format(mEndoTamarisk) + " - " + df.format(second.mEndoTamarisk) + " = "
+                + df.format(Math.abs(mEndoTamarisk - second.mEndoTamarisk)));
+
+        System.out.println("UpstreamRate " + df.format(mUpstreamRate) + " - " + df.format(second.mUpstreamRate) + " = "
+                + df.format(Math.abs(mUpstreamRate - second.mUpstreamRate)));
+
+        System.out.println("DownstreamRate " + df.format(mDownstreamRate) + " - " + df.format(second.mDownstreamRate)
+                + " = " + df.format(Math.abs(mDownstreamRate - second.mDownstreamRate)));
+
+        System.out.println("EradicationRate " + df.format(mEradicationRate) + " - "
+                + df.format(second.mEradicationRate) + " = "
+                + df.format(Math.abs(mEradicationRate - second.mEradicationRate)));
+
+        System.out.println("RestorationRate " + df.format(mRestorationRate) + " - "
+                + df.format(second.mRestorationRate) + " = "
+                + df.format(Math.abs(mRestorationRate - second.mRestorationRate)));
+
+        System.out.println("DeathRateTamarisk " + df.format(mDeathRateTamarisk) + " - "
+                + df.format(second.mDeathRateTamarisk) + " = "
+                + df.format(Math.abs(mDeathRateTamarisk - second.mDeathRateTamarisk)));
+
+        System.out.println("DeathRateNative " + df.format(mDeathRateNative) + " - "
+                + df.format(second.mDeathRateNative) + " = "
+                + df.format(Math.abs(mDeathRateNative - second.mDeathRateNative)));
+
+        System.out.println("== Exo To Endo ==");
+        for (int i = 0; i < mExoToEndoRatio.length; ++i) {
+            System.out.println(i + ": " + df.format(mExoToEndoRatio[i]) + " - " + df.format(second.mExoToEndoRatio[i])
+                    + " = " + df.format(Math.abs(mExoToEndoRatio[i] - second.mExoToEndoRatio[i])));
+        }
+
+        System.out.println("== Exo Tamarisk ==");
+        for (int i = 0; i < mExoTamarisk.length; ++i) {
+            System.out.println(i + ": " + df.format(mExoTamarisk[i]) + " - " + df.format(second.mExoTamarisk[i])
+                    + " = " + df.format(Math.abs(mExoTamarisk[i] - second.mExoTamarisk[i])));
+        }
+
+        System.out.println("Euclidean: " + compareTo(second));
+    }
 }

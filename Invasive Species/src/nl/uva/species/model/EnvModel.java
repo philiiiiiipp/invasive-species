@@ -61,7 +61,7 @@ public class EnvModel {
     private double mCostVariableEradicateRestorate = 0.1;
 
     /** Default value for each reach that there is exogenous germination */
-    private final double mDefaultExoToEndoRatio = 0.2;
+    private final double mDefaultExoToEndoRatio = 0.7;
 
     /** Default value for each reach that a Tamarisk plant grows from exogenous germination */
     private final double mDefaultExoTamarisk = 0.5;
@@ -865,7 +865,7 @@ public class EnvModel {
      * @return Returns the best action with its rewards value
      */
     private Pair<Action, Double> getBestAction(final RiverState riverState, final int reachPosition, final int[] action) {
-        if (reachPosition == riverState.getReaches().size()) {
+        if (reachPosition == mRiver.getNumReaches()) {
             Action current = new Action();
             current.intArray = action;
 

@@ -61,7 +61,7 @@ public class EnvModel {
     private double mCostVariableEradicateRestorate = 0.1;
 
     /** Default value for each reach that there is exogenous germination */
-    private final double mDefaultExoToEndoRatio = 0.2;
+    private final double mDefaultExoToEndoRatio = 0.7;
 
     /** Default value for each reach that a Tamarisk plant grows from exogenous germination */
     private final double mDefaultExoTamarisk = 0.5;

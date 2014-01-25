@@ -26,7 +26,7 @@ import org.rlcommunity.rlglue.codec.types.Observation;
 public class SparseCooperativeAgent extends AbstractAgent {
 
     /** The amount of planning steps to not yield new local states before planning is done */
-    private static final int PLAN_LIMIT = 50;
+    private static final int PLAN_LIMIT = 200;
 
     /** The learning rate alpha as described in (16) by (Kok & Vlassis, 2006) */
     private static final double LEARNING_RATE = 0.2;
@@ -72,7 +72,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
         final double budget = mRiver.getBudget();
         double actionReward = 0;
 
-        if (PRINT_ACTIONS) System.out.println("BEST ACTION: ");
+        if (PRINT_ACTIONS) System.out.print("BEST ACTION: ");
 
         // Find the action that maximises the Q sum
         final Action bestActions = new Action();
@@ -83,11 +83,12 @@ public class SparseCooperativeAgent extends AbstractAgent {
             // Restore if reasonable so that we do not have to include it in the Q calculations
             if (reach.getHabitatsEmpty() > reach.getHabitatsInvaded()) {
                 bestAction = Utilities.ACTION_RESTORE;
+                if (PRINT_ACTIONS) System.out.print(bestAction);
             } else {
                 final ReachKey reachKey = getKey(reach);
-                if (mQ.containsKey(reachKey)) {
+                if (!mQ.containsKey(reachKey)) {
                     bestAction = Utilities.ACTION_NOTHING;
-                    if (PRINT_ACTIONS) System.err.print(bestAction);
+                    if (PRINT_ACTIONS) System.out.print("X");
                 } else {
                     bestAction = getBestAction(reachKey);
                     if (PRINT_ACTIONS) System.out.print(bestAction);
@@ -106,7 +107,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
         } else {
             final Action bestConstrainedActions = getBestConstrainedAction(state);
             if (PRINT_ACTIONS) {
-                System.out.println(" - OVER BUDGET, SUBSTITUTING: ");
+                System.out.print(" - OVER BUDGET, SUBSTITUTING: ");
                 for (final Integer bestConstrainedAction : bestConstrainedActions.intArray) {
                     System.out.print(bestConstrainedAction);
                 }

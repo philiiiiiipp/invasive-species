@@ -73,7 +73,7 @@ class InvasiveEnvironment(Environment):
                 exogenousArrivalIndicator, reachArrivalRates, reachArrivalProbs, upStreamRate, downStreamRate,
                 competitionFactor, graph)
             self.actionParameterObj = ActionParameterClass(costPerTree=0.1, eradicationCost=0.5, restorationCost=0.9,
-                eradicationRate=1, restorationRate=1,
+                eradicationRate=0.65, restorationRate=0.65,
                 costPerReach=1, emptyCost=0, varEradicationCost=0.5, varInvasiveRestorationCost=0.1,
                 varEmptyRestorationCost=0, budget=100)
 

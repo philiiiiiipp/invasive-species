@@ -80,7 +80,7 @@ public class GeneticLearner extends AbstractLearnerAgent {
 
     @Override
     public Action start(final Observation observation) {
-        mStepCount = 0;
+        // mStepCount = 0;
         ++mEpisodeCount;
 
         if (mCurrentPhase == Phase.LEARNING) {

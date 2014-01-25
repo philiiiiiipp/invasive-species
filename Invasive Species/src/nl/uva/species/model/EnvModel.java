@@ -142,6 +142,28 @@ public class EnvModel {
         }
     }
 
+    public EnvModel(final River river, final double[] values) {
+        mRiver = river;
+
+        mEndoTamarisk = values[0];
+
+        // Should never exceed 0.5
+        mUpstreamRate = values[1] / 2;
+
+        mDownstreamRate = values[2];
+        mEradicationRate = values[3];
+        mRestorationRate = values[4];
+        mDeathRateTamarisk = values[5];
+        mDeathRateNative = values[6];
+
+        mExoToEndoRatio = new double[river.getNumReaches()];
+        mExoTamarisk = new double[river.getNumReaches()];
+        for (int i = 0; i < river.getNumReaches(); ++i) {
+            mExoToEndoRatio[i] = values[7 + i];
+            mExoTamarisk[i] = values[7 + river.getNumReaches() + i];
+        }
+    }
+
     /**
      * Prepares a model for the given river based on a chromosome's genes.
      * 
@@ -168,7 +190,8 @@ public class EnvModel {
         mExoTamarisk = new double[river.getNumReaches()];
         for (int i = 0; i < river.getNumReaches(); ++i) {
             mExoToEndoRatio[i] = genes[i + Parameter.values().length].doubleValue();
-            mExoTamarisk[i] = genes[i + river.getNumReaches() + Parameter.values().length].doubleValue();
+            mExoTamarisk[i] = genes[i + river.getNumReaches() + Parameter.values().length]
+                    .doubleValue();
         }
     }
 
@@ -294,8 +317,10 @@ public class EnvModel {
 
             final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
 
-            final double exoTamariskWeight = (exogenousActivated ? mExoToEndoRatio[index] * mExoTamarisk[index] : 0);
-            final double exoNativeWeight = (exogenousActivated ? mExoToEndoRatio[index] * (1 - mExoTamarisk[index]) : 0);
+            final double exoTamariskWeight = (exogenousActivated ? mExoToEndoRatio[index]
+                    * mExoTamarisk[index] : 0);
+            final double exoNativeWeight = (exogenousActivated ? mExoToEndoRatio[index]
+                    * (1 - mExoTamarisk[index]) : 0);
 
             final double endoTamarisWeight = endoToExoRatio * mEndoTamarisk;
             final double endoNativeWeight = endoToExoRatio * (1 - mEndoTamarisk);
@@ -313,8 +338,10 @@ public class EnvModel {
                 final Set<Reach> siblings = parent.getChildren();
                 for (final Reach sibling : siblings) {
                     if (sibling != reach) {
-                        tamariskScore += sibling.getHabitatsInvaded() * mUpstreamRate * mDownstreamRate;
-                        nativeScore += sibling.getHabitatsNative() * mUpstreamRate * mDownstreamRate;
+                        tamariskScore += sibling.getHabitatsInvaded() * mUpstreamRate
+                                * mDownstreamRate;
+                        nativeScore += sibling.getHabitatsNative() * mUpstreamRate
+                                * mDownstreamRate;
                     }
                 }
             }
@@ -326,8 +353,10 @@ public class EnvModel {
             }
 
             // Determine the chance of each plant and normalise
-            final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore / (5 * reachSize);
-            final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore / (5 * reachSize);
+            final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore
+                    / (5 * reachSize);
+            final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore
+                    / (5 * reachSize);
             final double chanceSum = tamariskChance + nativeChance;
 
             if (chanceSum > 0) {
@@ -430,7 +459,8 @@ public class EnvModel {
             // Update the expected reach contents
             reachesInvaded[reach.getIndex()] = reachInvaded - deathsInvaded;
             reachesNative[reach.getIndex()] = reachNative - deathsNative + growthsNative;
-            reachesEmpty[reach.getIndex()] = reachEmpty - growthsNative + deathsInvaded + deathsNative;
+            reachesEmpty[reach.getIndex()] = reachEmpty - growthsNative + deathsInvaded
+                    + deathsNative;
         }
 
         // Germinate empty habitats
@@ -466,8 +496,10 @@ public class EnvModel {
                 for (final Reach sibling : siblings) {
                     if (sibling != reach) {
                         final int siblingIndex = sibling.getIndex();
-                        tamariskScore += reachesInvaded[siblingIndex] * mUpstreamRate * mDownstreamRate;
-                        nativeScore += reachesNative[siblingIndex] * mUpstreamRate * mDownstreamRate;
+                        tamariskScore += reachesInvaded[siblingIndex] * mUpstreamRate
+                                * mDownstreamRate;
+                        nativeScore += reachesNative[siblingIndex] * mUpstreamRate
+                                * mDownstreamRate;
                     }
                 }
             }
@@ -480,8 +512,10 @@ public class EnvModel {
             }
 
             // Determine the chance of each plant and normalise
-            final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore / (5 * reachSize);
-            final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore / (5 * reachSize);
+            final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore
+                    / (5 * reachSize);
+            final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore
+                    / (5 * reachSize);
             final double chanceSum = tamariskChance + nativeChance;
 
             if (chanceSum > 0) {
@@ -498,7 +532,8 @@ public class EnvModel {
             expectedReachesEmpty[index] = reachEmpty;
         }
 
-        return new RiverState(mRiver, expectedReachesInvaded, expectedReachesNative, expectedReachesEmpty);
+        return new RiverState(mRiver, expectedReachesInvaded, expectedReachesNative,
+                expectedReachesEmpty);
     }
 
     /**
@@ -515,7 +550,8 @@ public class EnvModel {
      * @return A score representing the correlation between model's expectation and the actual
      *         outcome where 1 is the highest and 0 the lowest
      */
-    public double evaluateModel(final RiverState state, final Action actions, final RiverState resultState) {
+    public double evaluateModel(final RiverState state, final Action actions,
+            final RiverState resultState) {
         double reward = 0;
         final int reachSize = mRiver.getReachSize();
         final int numReaches = mRiver.getNumReaches();
@@ -626,8 +662,10 @@ public class EnvModel {
 
             final double endoToExoRatio = (1 - mExoToEndoRatio[index]);
 
-            final double exoTamariskWeight = (exogenousActivated ? mExoToEndoRatio[index] * mExoTamarisk[index] : 0);
-            final double exoNativeWeight = (exogenousActivated ? mExoToEndoRatio[index] * (1 - mExoTamarisk[index]) : 0);
+            final double exoTamariskWeight = (exogenousActivated ? mExoToEndoRatio[index]
+                    * mExoTamarisk[index] : 0);
+            final double exoNativeWeight = (exogenousActivated ? mExoToEndoRatio[index]
+                    * (1 - mExoTamarisk[index]) : 0);
 
             final double endoTamarisWeight = endoToExoRatio * mEndoTamarisk;
             final double endoNativeWeight = endoToExoRatio * (1 - mEndoTamarisk);
@@ -648,8 +686,10 @@ public class EnvModel {
                 for (final Reach sibling : siblings) {
                     if (sibling != reach) {
                         final int siblingIndex = sibling.getIndex();
-                        tamariskScore += reachesInvaded[siblingIndex] * mUpstreamRate * mDownstreamRate;
-                        nativeScore += reachesNative[siblingIndex] * mUpstreamRate * mDownstreamRate;
+                        tamariskScore += reachesInvaded[siblingIndex] * mUpstreamRate
+                                * mDownstreamRate;
+                        nativeScore += reachesNative[siblingIndex] * mUpstreamRate
+                                * mDownstreamRate;
                     }
                 }
             }
@@ -662,8 +702,10 @@ public class EnvModel {
             }
 
             // Determine the chance of each plant and normalise
-            final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore / (5 * reachSize);
-            final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore / (5 * reachSize);
+            final double tamariskChance = exoTamariskWeight + endoTamarisWeight * tamariskScore
+                    / (5 * reachSize);
+            final double nativeChance = exoNativeWeight + endoNativeWeight * nativeScore
+                    / (5 * reachSize);
             final double chanceSum = tamariskChance + nativeChance;
 
             if (chanceSum > 0) {
@@ -673,8 +715,10 @@ public class EnvModel {
                 final int[] habitats = reach.getHabitats();
                 for (int i = 0; i < habitats.length; ++i) {
                     final int habitatIndex = reachIndex * reachSize + i;
-                    habitatsInvaded[habitatIndex] += habitatsEmpty[habitatIndex] * tamariskChanceNorm;
-                    habitatsNative[habitatIndex] += habitatsEmpty[habitatIndex] * (1 - tamariskChanceNorm);
+                    habitatsInvaded[habitatIndex] += habitatsEmpty[habitatIndex]
+                            * tamariskChanceNorm;
+                    habitatsNative[habitatIndex] += habitatsEmpty[habitatIndex]
+                            * (1 - tamariskChanceNorm);
                     habitatsEmpty[habitatIndex] = 0;
                 }
             }
@@ -807,7 +851,8 @@ public class EnvModel {
                 // Can't eradicate a reach without Tamarisk plants
                 return mRiver.getPenalty();
             }
-            actionCost += mCostRestorate + mCostVariableEradicateRestorate * reach.getHabitatsInvaded();
+            actionCost += mCostRestorate + mCostVariableEradicateRestorate
+                    * reach.getHabitatsInvaded();
             break;
         }
 
@@ -864,12 +909,14 @@ public class EnvModel {
      * 
      * @return Returns the best action with its rewards value
      */
-    private Pair<Action, Double> getBestAction(final RiverState riverState, final int reachPosition, final int[] action) {
+    private Pair<Action, Double> getBestAction(final RiverState riverState,
+            final int reachPosition, final int[] action) {
         if (reachPosition == riverState.getReaches().size()) {
             Action current = new Action();
             current.intArray = action;
 
-            double reward = getExpectedNextStateReward(riverState, current) + getActionReward(riverState, current);
+            double reward = getExpectedNextStateReward(riverState, current)
+                    + getActionReward(riverState, current);
 
             return new Pair<Action, Double>(current, reward);
         }
@@ -883,7 +930,8 @@ public class EnvModel {
 
             if (resultAction == null || resultAction.getRight() < temp.getRight()) {
                 Action best = new Action();
-                best.intArray = Arrays.copyOf(temp.getLeft().intArray, temp.getLeft().intArray.length);
+                best.intArray = Arrays.copyOf(temp.getLeft().intArray,
+                        temp.getLeft().intArray.length);
 
                 resultAction = new Pair<Action, Double>(best, temp.getRight());
             }
@@ -953,7 +1001,8 @@ public class EnvModel {
         result += Math.abs(mDeathRateTamarisk - second.mDeathRateTamarisk);
         result += Math.abs(mDeathRateNative - second.mDeathRateNative);
 
-        int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length + Parameter.values().length;
+        int totalParameterCount = mExoToEndoRatio.length + mExoTamarisk.length
+                + Parameter.values().length;
         return result / totalParameterCount;
     }
 
@@ -969,14 +1018,17 @@ public class EnvModel {
     public void printComparison(final EnvModel second) {
         final DecimalFormat df = new DecimalFormat("#.####");
 
-        System.out.println("EndoTamarisk " + df.format(mEndoTamarisk) + " - " + df.format(second.mEndoTamarisk) + " = "
+        System.out.println("EndoTamarisk " + df.format(mEndoTamarisk) + " - "
+                + df.format(second.mEndoTamarisk) + " = "
                 + df.format(Math.abs(mEndoTamarisk - second.mEndoTamarisk)));
 
-        System.out.println("UpstreamRate " + df.format(mUpstreamRate) + " - " + df.format(second.mUpstreamRate) + " = "
+        System.out.println("UpstreamRate " + df.format(mUpstreamRate) + " - "
+                + df.format(second.mUpstreamRate) + " = "
                 + df.format(Math.abs(mUpstreamRate - second.mUpstreamRate)));
 
-        System.out.println("DownstreamRate " + df.format(mDownstreamRate) + " - " + df.format(second.mDownstreamRate)
-                + " = " + df.format(Math.abs(mDownstreamRate - second.mDownstreamRate)));
+        System.out.println("DownstreamRate " + df.format(mDownstreamRate) + " - "
+                + df.format(second.mDownstreamRate) + " = "
+                + df.format(Math.abs(mDownstreamRate - second.mDownstreamRate)));
 
         System.out.println("EradicationRate " + df.format(mEradicationRate) + " - "
                 + df.format(second.mEradicationRate) + " = "
@@ -996,16 +1048,46 @@ public class EnvModel {
 
         System.out.println("== Exo To Endo ==");
         for (int i = 0; i < mExoToEndoRatio.length; ++i) {
-            System.out.println(i + ": " + df.format(mExoToEndoRatio[i]) + " - " + df.format(second.mExoToEndoRatio[i])
-                    + " = " + df.format(Math.abs(mExoToEndoRatio[i] - second.mExoToEndoRatio[i])));
+            System.out.println(i + ": " + df.format(mExoToEndoRatio[i]) + " - "
+                    + df.format(second.mExoToEndoRatio[i]) + " = "
+                    + df.format(Math.abs(mExoToEndoRatio[i] - second.mExoToEndoRatio[i])));
         }
 
         System.out.println("== Exo Tamarisk ==");
         for (int i = 0; i < mExoTamarisk.length; ++i) {
-            System.out.println(i + ": " + df.format(mExoTamarisk[i]) + " - " + df.format(second.mExoTamarisk[i])
-                    + " = " + df.format(Math.abs(mExoTamarisk[i] - second.mExoTamarisk[i])));
+            System.out.println(i + ": " + df.format(mExoTamarisk[i]) + " - "
+                    + df.format(second.mExoTamarisk[i]) + " = "
+                    + df.format(Math.abs(mExoTamarisk[i] - second.mExoTamarisk[i])));
         }
 
         System.out.println("Euclidean: " + compareTo(second));
+    }
+
+    public void prettyPrint() {
+        final DecimalFormat df = new DecimalFormat("#.####");
+
+        System.out.println("EndoTamarisk: \t" + df.format(mEndoTamarisk));
+
+        System.out.println("UpstreamRate: \t" + df.format(mUpstreamRate));
+
+        System.out.println("DownstreamRate: \t" + df.format(mDownstreamRate));
+
+        System.out.println("EradicationRate: \t" + df.format(mEradicationRate));
+
+        System.out.println("RestorationRate: \t" + df.format(mRestorationRate));
+
+        System.out.println("DeathRateTamarisk: \t" + df.format(mDeathRateTamarisk));
+
+        System.out.println("DeathRateNative: \t" + df.format(mDeathRateNative));
+
+        System.out.println("== Exo To Endo ==");
+        for (int i = 0; i < mExoToEndoRatio.length; ++i) {
+            System.out.println(i + ": " + df.format(mExoToEndoRatio[i]));
+        }
+
+        System.out.println("== Exo Tamarisk ==");
+        for (int i = 0; i < mExoTamarisk.length; ++i) {
+            System.out.println(i + ": " + df.format(mExoTamarisk[i]));
+        }
     }
 }

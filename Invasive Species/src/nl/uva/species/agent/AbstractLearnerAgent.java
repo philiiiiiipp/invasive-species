@@ -1,11 +1,7 @@
 package nl.uva.species.agent;
 
-import java.util.Arrays;
-
-import nl.uva.species.model.EnvModel;
 import nl.uva.species.model.Reach;
 import nl.uva.species.model.RiverState;
-import nl.uva.species.utils.Pair;
 import nl.uva.species.utils.Utilities;
 
 import org.rlcommunity.rlglue.codec.types.Action;

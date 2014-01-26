@@ -73,9 +73,9 @@ class InvasiveEnvironment(Environment):
                 exogenousArrivalIndicator, reachArrivalRates, reachArrivalProbs, upStreamRate, downStreamRate,
                 competitionFactor, graph)
             self.actionParameterObj = ActionParameterClass(costPerTree=0.1, eradicationCost=0.5, restorationCost=0.9,
-                eradicationRate=0.7, restorationRate=0.7,
+                eradicationRate=1, restorationRate=1,
                 costPerReach=1, emptyCost=0, varEradicationCost=0.5, varInvasiveRestorationCost=0.1,
-                varEmptyRestorationCost=0, budget=100)
+                varEmptyRestorationCost=0, budget=200)
 
     def env_init(self):
         """

@@ -911,7 +911,7 @@ public class EnvModel {
      */
     private Pair<Action, Double> getBestAction(final RiverState riverState,
             final int reachPosition, final int[] action) {
-        if (reachPosition == riverState.getReaches().size()) {
+        if (reachPosition == mRiver.getNumReaches()) {
             Action current = new Action();
             current.intArray = action;
 
@@ -1013,6 +1013,24 @@ public class EnvModel {
      */
     public River getRiver() {
         return mRiver;
+    }
+
+    /**
+     * Retrieves the rate at which parent reaches infect child reaches.
+     * 
+     * @return The upstream rate
+     */
+    public double getUpstreamRate() {
+        return mUpstreamRate;
+    }
+
+    /**
+     * Retrieves the rate at which child reaches infect parent reaches.
+     * 
+     * @return The upstream rate
+     */
+    public double getDownstreamRate() {
+        return mDownstreamRate;
     }
 
     public void printComparison(final EnvModel second) {

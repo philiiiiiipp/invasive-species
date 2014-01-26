@@ -130,7 +130,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
     public void cleanup() {}
 
     @Override
-    public void message(Messages message) {}
+    public void message(final Messages message) {}
 
     /**
      * Train the Q function based on the current model.
@@ -142,7 +142,8 @@ public class SparseCooperativeAgent extends AbstractAgent {
         // Reset Q to remove traces of old models
         mQ.clear();
 
-        // Train Q until there are no new states being found for PLAN_LIMIT amount of states
+        final HashMap<Integer, Set<Integer>> structure = mRiver.getStructure();
+
         int runs = 0;
         int runsUnchanged = 0;
         while (++runsUnchanged < PLAN_LIMIT) {
@@ -195,7 +196,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
                 }
             }
 
-            System.out.print(mQ.size() + " ");
+            // System.out.print(mQ.size() + " ");
 
             // Keep track of changes
             if (qSize != mQ.size()) {
@@ -203,7 +204,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
             }
 
             if (runs++ % 50 == 0) {
-                System.out.println();
+                // System.out.println();
             }
         }
         System.out.println();

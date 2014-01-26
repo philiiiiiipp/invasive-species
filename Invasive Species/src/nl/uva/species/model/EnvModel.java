@@ -142,6 +142,28 @@ public class EnvModel {
         }
     }
 
+    public EnvModel(final River river, final double[] values) {
+        mRiver = river;
+
+        mEndoTamarisk = values[0];
+
+        // Should never exceed 0.5
+        mUpstreamRate = values[1] / 2;
+
+        mDownstreamRate = values[2];
+        mEradicationRate = values[3];
+        mRestorationRate = values[4];
+        mDeathRateTamarisk = values[5];
+        mDeathRateNative = values[6];
+
+        mExoToEndoRatio = new double[river.getNumReaches()];
+        mExoTamarisk = new double[river.getNumReaches()];
+        for (int i = 0; i < river.getNumReaches(); ++i) {
+            mExoToEndoRatio[i] = values[7 + i];
+            mExoTamarisk[i] = values[7 + river.getNumReaches() + i];
+        }
+    }
+
     /**
      * Prepares a model for the given river based on a chromosome's genes.
      * 
@@ -1057,5 +1079,33 @@ public class EnvModel {
         }
 
         System.out.println("Euclidean: " + compareTo(second));
+    }
+
+    public void prettyPrint() {
+        final DecimalFormat df = new DecimalFormat("#.####");
+
+        System.out.println("EndoTamarisk: \t" + df.format(mEndoTamarisk));
+
+        System.out.println("UpstreamRate: \t" + df.format(mUpstreamRate));
+
+        System.out.println("DownstreamRate: \t" + df.format(mDownstreamRate));
+
+        System.out.println("EradicationRate: \t" + df.format(mEradicationRate));
+
+        System.out.println("RestorationRate: \t" + df.format(mRestorationRate));
+
+        System.out.println("DeathRateTamarisk: \t" + df.format(mDeathRateTamarisk));
+
+        System.out.println("DeathRateNative: \t" + df.format(mDeathRateNative));
+
+        System.out.println("== Exo To Endo ==");
+        for (int i = 0; i < mExoToEndoRatio.length; ++i) {
+            System.out.println(i + ": " + df.format(mExoToEndoRatio[i]));
+        }
+
+        System.out.println("== Exo Tamarisk ==");
+        for (int i = 0; i < mExoTamarisk.length; ++i) {
+            System.out.println(i + ": " + df.format(mExoTamarisk[i]));
+        }
     }
 }

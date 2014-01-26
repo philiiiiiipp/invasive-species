@@ -25,7 +25,7 @@ def demo():
         for j in range(0, 10):
             RLGlue.RL_env_message("set-start-state " + S)
             RLGlue.RL_start()
-            RLGlue.RL_episode(1000)
+            RLGlue.RL_episode(100)
         RLGlue.RL_env_message("set-start-state " + S)
         RLGlue.RL_start()
         this_score = evaluateAgent()

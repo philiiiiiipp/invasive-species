@@ -10,7 +10,6 @@ import nl.uva.species.model.RiverState;
 
 import org.jgap.Chromosome;
 import org.jgap.Configuration;
-import org.jgap.Gene;
 import org.jgap.Genotype;
 import org.jgap.IChromosome;
 import org.jgap.InvalidConfigurationException;
@@ -24,6 +23,8 @@ public class GeneticModelCreator {
 
     private final List<List<Action>> mActions = new ArrayList<>();
 
+    private final List<IChromosome> mFittestChromosomes = new ArrayList<>();
+
     private final int mEvolutions;
 
     /** The standard population size */
@@ -31,6 +32,12 @@ public class GeneticModelCreator {
 
     /** Amount of evolutions */
     public final int STANDARD_EVOLUTIONS = 20;
+
+    /**
+     * Adds all previously calculated fittest chromosomes at evolution step STANDARD_EVOLUTIONS +
+     * ADD_BEST_CHROMOSOMES_TIME
+     */
+    public final int ADD_BEST_CHROMOSOMES_TIME = -5;
 
     /** The currently calculated genotype */
     private Genotype mGenotype;
@@ -53,6 +60,8 @@ public class GeneticModelCreator {
      * @param river
      */
     public void reinitialise(final River river) {
+        mFittestChromosomes.add(mGenotype.getFittestChromosome());
+
         mGenotype = initialiseGenotype(STANDARD_POP_SIZE, river, EnvModel.Parameter.values().length
                 + river.getNumReaches() * 2);
     }
@@ -67,20 +76,21 @@ public class GeneticModelCreator {
     private Genotype initialiseGenotype(final int populationSize, final River river,
             final int geneNumber) {
 
-        if (mGenotype != null) {
-            // We already calculated once, take the best chromosomes to the next round
+        // if (mGenotype != null) {
+        // // We already calculated once, take the best chromosomes to the next round
+        //
+        // List<IChromosome> chromosomeList = mGenotype.getPopulation().getChromosomes();
+        // for (int i = 0; i < chromosomeList.size(); ++i) {
+        // Gene[] geneList = chromosomeList.get(i).getGenes();
+        // for (Gene gene : geneList) {
+        // gene.setToRandomValue(null);
+        // }
+        // }
+        //
+        // return mGenotype;
+        // }
 
-            List<IChromosome> chromosomeList = mGenotype.getPopulation().getChromosomes();
-            for (int i = 1; i < chromosomeList.size(); ++i) {
-                Gene[] geneList = chromosomeList.get(i).getGenes();
-                for (Gene gene : geneList) {
-                    gene.setToRandomValue(null);
-                }
-            }
-
-            return mGenotype;
-        }
-
+        Configuration.reset();
         Configuration gaConf = new DefaultConfiguration();
         gaConf.setPreservFittestIndividual(true);
         gaConf.setKeepPopulationSizeConstant(false);
@@ -163,7 +173,12 @@ public class GeneticModelCreator {
                 equalityCounter++;
                 lastModel = model;
 
-                if (equalityCounter == 2) {
+                if (equalityCounter == 1) {
+                    // Equal model, try if the old best Chromosomes make a difference
+                    for (IChromosome chromosome : mFittestChromosomes) {
+                        mGenotype.getPopulation().addChromosome(chromosome);
+                    }
+                } else if (equalityCounter == 3) {
                     // Multiple times the same model, stop calculating
                     System.out.println("Genetic model stops due to: No improvement");
                     break;
@@ -184,6 +199,13 @@ public class GeneticModelCreator {
             System.out.println("Took: " + (System.currentTimeMillis() - start) / 1000 / 60
                     + " Minutes");
             start = System.currentTimeMillis();
+
+            if (evolution == mEvolutions + ADD_BEST_CHROMOSOMES_TIME) {
+                // Add previous
+                for (IChromosome chromosome : mFittestChromosomes) {
+                    mGenotype.getPopulation().addChromosome(chromosome);
+                }
+            }
         }
 
         System.out.println("Total: " + (System.currentTimeMillis() - total) / 1000 / 60

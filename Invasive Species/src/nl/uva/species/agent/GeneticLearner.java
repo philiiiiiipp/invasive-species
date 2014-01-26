@@ -4,7 +4,6 @@ import nl.uva.species.genetic.GeneticModelCreator;
 import nl.uva.species.model.EnvModel;
 import nl.uva.species.model.River;
 import nl.uva.species.model.RiverState;
-import nl.uva.species.ui.GraphInterface;
 import nl.uva.species.utils.Messages;
 
 import org.rlcommunity.rlglue.codec.types.Action;
@@ -50,7 +49,7 @@ public class GeneticLearner extends AbstractLearnerAgent {
     private int mGraphVisibilityCounter = 0;
 
     /** The graph interface */
-    private GraphInterface mGraphInterface = new GraphInterface();
+    // private GraphInterface mGraphInterface = new GraphInterface();
 
     @Override
     public void init(final River river) {

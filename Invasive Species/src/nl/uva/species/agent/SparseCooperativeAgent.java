@@ -60,8 +60,14 @@ public class SparseCooperativeAgent extends AbstractAgent {
      *            The model containing the environment's parameters
      */
     public void setModel(final EnvModel model) {
-        mModel = model;
+        if (mModel != null && mModel.compareTo(model) == 0) {
+            // Model did not change, no need for recalculation of Q
+            System.out.println("Same model, not recalculating Q");
+            return;
+        }
 
+        System.out.println("Recalculating Q");
+        mModel = model;
         trainQ();
     }
 
@@ -102,7 +108,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
 
         // Return the given actions if it's within the budget, otherwise the best constrained action
         if (Math.abs(actionReward) < budget) {
-            System.out.println();
+            if (PRINT_ACTIONS) System.out.println();
             return bestActions;
         } else {
             final Action bestConstrainedActions = getBestConstrainedAction(state);
@@ -111,8 +117,8 @@ public class SparseCooperativeAgent extends AbstractAgent {
                 for (final Integer bestConstrainedAction : bestConstrainedActions.intArray) {
                     System.out.print(bestConstrainedAction);
                 }
+                System.out.println();
             }
-            System.out.println();
             return bestConstrainedActions;
         }
     }
@@ -193,7 +199,7 @@ public class SparseCooperativeAgent extends AbstractAgent {
                 }
             }
 
-            // System.out.print(mQ.size() + " ");
+            if (PRINT_ACTIONS) System.out.print(mQ.size() + " ");
 
             // Keep track of changes
             if (qSize != mQ.size()) {
@@ -201,10 +207,10 @@ public class SparseCooperativeAgent extends AbstractAgent {
             }
 
             if (runs++ % 50 == 0) {
-                // System.out.println();
+                if (PRINT_ACTIONS) System.out.println();
             }
         }
-        System.out.println();
+        if (PRINT_ACTIONS) System.out.println();
     }
 
     /**

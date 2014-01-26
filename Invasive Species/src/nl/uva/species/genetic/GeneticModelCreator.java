@@ -141,13 +141,6 @@ public class GeneticModelCreator {
 
         if (stateCounter < 3) {
             // we have no data return our prior
-
-            // double[] superGenes = new double[EnvModel.Parameter.values().length
-            // + river.getNumReaches() * 2];
-            // for (int i = 0; i < superGenes.length; ++i) {
-            // superGenes[i] = 0;
-            // }
-
             return new EnvModel(river, false);
         }
 

@@ -1,6 +1,5 @@
 package nl.uva.species.genetic;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,184 +18,222 @@ import org.rlcommunity.rlglue.codec.types.Action;
 
 public class GeneticModelCreator {
 
-	/** The past river states */
-	private final List<List<RiverState>> mStates = new ArrayList<>();
+    /** The past river states */
+    private final List<List<RiverState>> mStates = new ArrayList<>();
 
-	private final List<List<Action>> mActions = new ArrayList<>();
+    private final List<List<Action>> mActions = new ArrayList<>();
 
-	private final int mEvolutions;
+    private final List<IChromosome> mFittestChromosomes = new ArrayList<>();
 
-	/** The standard population size */
-	public final int STANDARD_POP_SIZE = 50;
+    private final int mEvolutions;
 
-	public final int STANDARD_EVOLUTIONS = 20;
+    /** The standard population size */
+    public final int STANDARD_POP_SIZE = 20;
 
-	private Genotype mGenotype;
+    /** Amount of evolutions */
+    public final int STANDARD_EVOLUTIONS = 20;
 
-	private static String[] GEN_NAMES = new String[] { "ENDO_TAMARISK   ", "UPSTREAM_RATE   ", "DOWNSTREAM_RATE",
-			"ERADICATION_RATE", "RESTORATION_RATE", "DEATH_RATE_TAMARISK", "DEATH_RATE_NATIVE" };
+    /**
+     * Adds all previously calculated fittest chromosomes at evolution step STANDARD_EVOLUTIONS +
+     * ADD_BEST_CHROMOSOMES_TIME
+     */
+    public final int ADD_BEST_CHROMOSOMES_TIME = -5;
 
-	/**
-	 * Create a genetic model creator with standard values and the given river
-	 * 
-	 * @param river
-	 *            The river as the basis of the model
-	 */
-	public GeneticModelCreator(final River river) {
-		mEvolutions = STANDARD_EVOLUTIONS;
-		int geneNumber = EnvModel.Parameter.values().length + river.getNumReaches() * 2;
-		mGenotype = initialiseGenotype(STANDARD_POP_SIZE, river, geneNumber);
-	}
+    /** The currently calculated genotype */
+    private Genotype mGenotype;
 
-	public void reinitialise(final River river) {
-		initialiseGenotype(STANDARD_POP_SIZE, river, EnvModel.Parameter.values().length + river.getNumReaches() * 2);
-	}
+    /**
+     * Create a genetic model creator with standard values and the given river
+     * 
+     * @param river
+     *            The river as the basis of the model
+     */
+    public GeneticModelCreator(final River river) {
+        mEvolutions = STANDARD_EVOLUTIONS;
+        int geneNumber = EnvModel.Parameter.values().length + river.getNumReaches() * 2;
+        mGenotype = initialiseGenotype(STANDARD_POP_SIZE, river, geneNumber);
+    }
 
-	/**
-	 * Initialize a genotype with the given parameters
-	 * 
-	 * @param populationSize
-	 *            The size of the population
-	 * @return The generated genotype
-	 */
-	private Genotype initialiseGenotype(final int populationSize, final River river, final int geneNumber) {
-		Configuration.reset();
-		Configuration gaConf = new DefaultConfiguration();
-		gaConf.setPreservFittestIndividual(true);
-		gaConf.setKeepPopulationSizeConstant(false);
+    /**
+     * Reinitialise the genepool
+     * 
+     * @param river
+     */
+    public void reinitialise(final River river) {
+        mFittestChromosomes.add(mGenotype.getFittestChromosome());
 
-		Genotype genotype = null;
-		try {
-			// IChromosome sampleChromosome = new Chromosome(gaConf, new DoubleGene(gaConf, 0, 1), geneNumber);
-			IChromosome sampleChromosome = new Chromosome(gaConf, new SuperGene(gaConf), geneNumber);
+        mGenotype = initialiseGenotype(STANDARD_POP_SIZE, river, EnvModel.Parameter.values().length
+                + river.getNumReaches() * 2);
+    }
 
-			gaConf.setAlwaysCaculateFitness(true);
-			gaConf.setSampleChromosome(sampleChromosome);
-			gaConf.setPopulationSize(populationSize);
+    /**
+     * Initialize a genotype with the given parameters
+     * 
+     * @param populationSize
+     *            The size of the population
+     * @return The generated genotype
+     */
+    private Genotype initialiseGenotype(final int populationSize, final River river,
+            final int geneNumber) {
 
-			gaConf.setFitnessFunction(new EvaluateModel(mStates, mActions, river));
-			genotype = Genotype.randomInitialGenotype(gaConf);
-		} catch (InvalidConfigurationException e) {
-			e.printStackTrace();
-		}
+        // if (mGenotype != null) {
+        // // We already calculated once, take the best chromosomes to the next round
+        //
+        // List<IChromosome> chromosomeList = mGenotype.getPopulation().getChromosomes();
+        // for (int i = 0; i < chromosomeList.size(); ++i) {
+        // Gene[] geneList = chromosomeList.get(i).getGenes();
+        // for (Gene gene : geneList) {
+        // gene.setToRandomValue(null);
+        // }
+        // }
+        //
+        // return mGenotype;
+        // }
 
-		return genotype;
-	}
+        Configuration.reset();
+        Configuration gaConf = new DefaultConfiguration();
+        gaConf.setPreservFittestIndividual(true);
+        gaConf.setKeepPopulationSizeConstant(false);
 
-	public EnvModel getBestModel(final River river) {
-		int stateCounter = 0;
-		for (List<RiverState> riverList : mStates) {
-			stateCounter += riverList.size();
-		}
+        Genotype genotype = null;
+        try {
+            IChromosome sampleChromosome = new Chromosome(gaConf, new SuperGene(gaConf), geneNumber);
 
-		if (stateCounter < 3) {
-			// we have no data return our prior
-			return new EnvModel(river, false);
-		}
+            gaConf.setAlwaysCaculateFitness(true);
+            gaConf.setSampleChromosome(sampleChromosome);
+            gaConf.setPopulationSize(populationSize);
 
-		IChromosome fittest = null;
-		double start = System.currentTimeMillis(), total = System.currentTimeMillis();
-		for (int evolution = 0; evolution < mEvolutions; evolution++) {
-			mGenotype.evolve();
+            gaConf.setFitnessFunction(new EvaluateModel(mStates, mActions, river));
+            genotype = Genotype.randomInitialGenotype(gaConf);
 
-			// Print summary
-			fittest = mGenotype.getFittestChromosome();
+        } catch (InvalidConfigurationException e) {
+            e.printStackTrace();
+        }
 
-			DecimalFormat df = new DecimalFormat("#.####");
-			for (int i = 0; i < GEN_NAMES.length; ++i) {
-				System.out
-						.println(GEN_NAMES[i] + " \t " + df.format(((SuperGene) fittest.getGenes()[i]).doubleValue()));
-			}
+        return genotype;
+    }
 
-			System.out.println("==ExoToEndoRatio==");
-			for (int i = GEN_NAMES.length; i < GEN_NAMES.length + river.getNumReaches(); ++i) {
-				System.out.println((i - GEN_NAMES.length) + ": "
-						+ df.format(((SuperGene) fittest.getGenes()[i]).doubleValue()));
-			}
+    /**
+     * Calculate the best fitting model
+     * 
+     * @param river
+     *            The currently used river
+     * @return The best fitting model
+     */
+    public EnvModel getBestModel(final River river) {
+        return getBestModel(river, null);
+    }
 
-			System.out.println("==ExoTamarisk==");
-			for (int i = GEN_NAMES.length + river.getNumReaches(); i < GEN_NAMES.length + 2 * river.getNumReaches(); ++i) {
-				System.out.println((i - (GEN_NAMES.length + river.getNumReaches())) + ": "
-						+ df.format(((SuperGene) fittest.getGenes()[i]).doubleValue()));
-			}
+    /**
+     * Calculate the best fitting model
+     * 
+     * @param river
+     *            The currently used river
+     * @param trueModel
+     *            The true model if available, only for printout comparison
+     * @return The best fitting model
+     */
+    public EnvModel getBestModel(final River river, final EnvModel trueModel) {
+        int stateCounter = 0;
+        for (List<RiverState> riverList : mStates) {
+            stateCounter += riverList.size();
+        }
 
-			System.out.println("Best fitness after: " + evolution + " steps "
-					+ mGenotype.getFittestChromosome().getFitnessValue());
+        if (stateCounter < 3) {
+            // we have no data return our prior
+            return new EnvModel(river, false);
+        }
 
-			System.out.println("Took: " + (System.currentTimeMillis() - start) / 1000 / 60 + " Minutes");
-			start = System.currentTimeMillis();
-		}
+        IChromosome fittest = null;
+        double start = System.currentTimeMillis(), total = System.currentTimeMillis();
+        EnvModel lastModel = null;
+        int equalityCounter = 0;
+        for (int evolution = 0; evolution < mEvolutions; evolution++) {
+            mGenotype.evolve();
 
-		System.out.println("Total: " + (System.currentTimeMillis() - total) / 1000 / 60 + " Minutes");
+            // Print summary
+            fittest = mGenotype.getFittestChromosome();
 
-		return new EnvModel(river, Arrays.copyOf(fittest.getGenes(), fittest.getGenes().length, SuperGene[].class));
-	}
+            SuperGene[] genes = new SuperGene[fittest.getGenes().length];
+            for (int i = 0; i < fittest.getGenes().length; ++i) {
+                genes[i] = (SuperGene) fittest.getGene(i);
+            }
 
-	public EnvModel getBestModel(final River river, final EnvModel trueModel) {
-		int stateCounter = 0;
-		for (List<RiverState> riverList : mStates) {
-			stateCounter += riverList.size();
-		}
+            EnvModel model = new EnvModel(river, genes);
 
-		if (stateCounter < 3) {
-			// we have no data return our prior
-			return new EnvModel(river, false);
-		}
+            if (lastModel != null && model.compareTo(lastModel) == 0) {
+                // models equal
+                equalityCounter++;
+                lastModel = model;
 
-		IChromosome fittest = null;
-		double start = System.currentTimeMillis(), total = System.currentTimeMillis();
-		for (int evolution = 0; evolution < mEvolutions; evolution++) {
-			mGenotype.evolve();
+                if (equalityCounter == 1) {
+                    // Equal model, try if the old best Chromosomes make a difference
+                    for (IChromosome chromosome : mFittestChromosomes) {
+                        mGenotype.getPopulation().addChromosome(chromosome);
+                    }
+                } else if (equalityCounter == 3) {
+                    // Multiple times the same model, stop calculating
+                    System.out.println("Genetic model stops due to: No improvement");
+                    break;
+                }
+            } else {
+                equalityCounter = 0;
+                lastModel = model;
+            }
 
-			// Print summary
-			fittest = mGenotype.getFittestChromosome();
+            if (trueModel != null) {
+                trueModel.printComparison(model);
+            } else {
+                model.prettyPrint();
+            }
+            System.out.println("Best fitness after: " + evolution + " steps "
+                    + mGenotype.getFittestChromosome().getFitnessValue());
 
-			SuperGene[] genes = new SuperGene[fittest.getGenes().length];
-			for (int i = 0; i < fittest.getGenes().length; ++i) {
-				genes[i] = (SuperGene) fittest.getGene(i);
-			}
+            System.out.println("Took: " + (System.currentTimeMillis() - start) / 1000 / 60
+                    + " Minutes");
+            start = System.currentTimeMillis();
 
-			EnvModel model = new EnvModel(river, genes);
-			trueModel.printComparison(model);
+            if (evolution == mEvolutions + ADD_BEST_CHROMOSOMES_TIME) {
+                // Add previous
+                for (IChromosome chromosome : mFittestChromosomes) {
+                    mGenotype.getPopulation().addChromosome(chromosome);
+                }
+            }
+        }
 
-			System.out.println("Best fitness after: " + evolution + " steps "
-					+ mGenotype.getFittestChromosome().getFitnessValue());
+        System.out.println("Total: " + (System.currentTimeMillis() - total) / 1000 / 60
+                + " Minutes");
 
-			System.out.println("Took: " + (System.currentTimeMillis() - start) / 1000 / 60 + " Minutes");
-			start = System.currentTimeMillis();
-		}
+        return new EnvModel(river, Arrays.copyOf(fittest.getGenes(), fittest.getGenes().length,
+                SuperGene[].class));
+    }
 
-		System.out.println("Total: " + (System.currentTimeMillis() - total) / 1000 / 60 + " Minutes");
+    /**
+     * Finish the current episode, creating space for new states and actions
+     */
+    public void finishEpisode() {
+        mStates.add(new ArrayList<RiverState>());
+        mActions.add(new ArrayList<Action>());
+    }
 
-		return new EnvModel(river, Arrays.copyOf(fittest.getGenes(), fittest.getGenes().length, SuperGene[].class));
-	}
+    /**
+     * Add the river state to the river state observation list
+     * 
+     * @param riverState
+     * @return true if the action was successful
+     */
+    public boolean addRiverState(final RiverState riverState) {
+        return mStates.get(mStates.size() - 1).add(riverState);
+    }
 
-	/**
-	 * Finish the current episode, creating space for new states and actions
-	 */
-	public void finishEpisode() {
-		mStates.add(new ArrayList<RiverState>());
-		mActions.add(new ArrayList<Action>());
-	}
-
-	/**
-	 * Add the river state to the river state observation list
-	 * 
-	 * @param riverState
-	 * @return true if the action was successful
-	 */
-	public boolean addRiverState(final RiverState riverState) {
-		return mStates.get(mStates.size() - 1).add(riverState);
-	}
-
-	/**
-	 * Add the action to the action list
-	 * 
-	 * @param a
-	 *            The action to add
-	 * @return true if the action was successful
-	 */
-	public boolean addAction(final Action a) {
-		return mActions.get(mStates.size() - 1).add(a);
-	}
+    /**
+     * Add the action to the action list
+     * 
+     * @param a
+     *            The action to add
+     * @return true if the action was successful
+     */
+    public boolean addAction(final Action a) {
+        return mActions.get(mStates.size() - 1).add(a);
+    }
 }

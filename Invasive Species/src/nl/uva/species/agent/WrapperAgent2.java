@@ -10,7 +10,7 @@ import org.rlcommunity.rlglue.codec.util.AgentLoader;
 
 /**
  * This wrapper can be used with ourExperiment.py
- *
+ * 
  */
 public class WrapperAgent2 extends AbstractAgent {
 
@@ -21,9 +21,12 @@ public class WrapperAgent2 extends AbstractAgent {
 
     /** The genetic learner that learns the model */
     private final GeneticLearner mLearner = new GeneticLearner();
-    
+
     /** The Planner that plans on a model given by the genetic learner */
     private final SparseCooperativeAgent mPlanner = new SparseCooperativeAgent();
+
+    /** The really clever heuristic agent */
+    private final SimpleHeuristicsAgent mHeuristicAgent = new SimpleHeuristicsAgent();
 
     @Override
     public void init(final River river) {
@@ -31,15 +34,19 @@ public class WrapperAgent2 extends AbstractAgent {
         mCostSolver.init(mRiver);
         mLearner.init(mRiver);
         mPlanner.init(mRiver);
+        mHeuristicAgent.init(mRiver);
     }
 
     @Override
     public Action start(final Observation observation) {
         if (isLearningCosts()) {
             return mCostSolver.start(observation);
-        } else if (isLearning()) {
+        } else if (isLearningModel()) {
             return mLearner.start(observation);
+        } else if (isFollowingHeuristics()) {
+            return mHeuristicAgent.start(observation);
         } else { // if isEvaluating()
+
             return mPlanner.start(observation);
         }
     }
@@ -48,8 +55,10 @@ public class WrapperAgent2 extends AbstractAgent {
     public Action step(final double reward, final Observation observation) {
         if (isLearningCosts()) {
             return mCostSolver.step(reward, observation);
-        } else if (isLearning()) {
+        } else if (isLearningModel()) {
             return mLearner.step(reward, observation);
+        } else if (isFollowingHeuristics()) {
+            return mHeuristicAgent.step(reward, observation);
         } else { // if isEvaluating()
             return mPlanner.step(reward, observation);
         }

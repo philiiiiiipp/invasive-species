@@ -12,6 +12,7 @@ public abstract class AbstractAgent implements AgentInterface {
 
     private boolean mLearningCosts = false;
     private boolean mLearningModel = false;
+    private boolean mFollowingHeuristics = false;
     private boolean mPlanning = false;
     private boolean mEvaluating = false;
     
@@ -60,6 +61,7 @@ public abstract class AbstractAgent implements AgentInterface {
         // ----- message handling for our experiment (ourExperiment.py)
         mLearningCosts = false;
         mLearningModel = false;
+        mFollowingHeuristics = false;
         mPlanning = false;
         mEvaluating = false;
         if (inMessage.startsWith(Messages.LEARN_COST_PARAM.incomingMessage())) {
@@ -71,6 +73,11 @@ public abstract class AbstractAgent implements AgentInterface {
             mLearningModel = true;
             message(Messages.LEARN_MODEL);
             return Messages.LEARN_MODEL.outgoingMessage();
+        }
+        if (inMessage.startsWith(Messages.FOLLOW_HEURISTICS.incomingMessage())) {
+            mFollowingHeuristics = true;
+            message(Messages.FOLLOW_HEURISTICS);
+            return Messages.FOLLOW_HEURISTICS.outgoingMessage();
         }
         if (inMessage.startsWith(Messages.PLAN.incomingMessage())) {
             mPlanning = true;
@@ -128,6 +135,10 @@ public abstract class AbstractAgent implements AgentInterface {
         return mLearning;
     }
 
+    public boolean isFollowingHeuristics() {
+        return mFollowingHeuristics;
+    }
+    
     public boolean isExploring() {
         return mExploring;
     }

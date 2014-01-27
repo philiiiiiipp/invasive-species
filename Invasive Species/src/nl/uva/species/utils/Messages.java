@@ -3,10 +3,11 @@ package nl.uva.species.utils;
 public enum Messages {
     
     // this is for our own experiment (ourExperiment.py)
-    LEARN_COST_PARAM("learn cost parameters", "message understood, policy frozen"),
-    LEARN_MODEL("learn model", "message understood, policy frozen"),
-    PLAN("plan", "message understood, policy frozen"),
-    EVALUATE("evaluate", "message understood, policy frozen"),
+    LEARN_COST_PARAM("learn cost parameters", "message understood, learning cost parameters now"),
+    LEARN_MODEL("learn model", "message understood, learning model now"),
+    PLAN("plan", "message understood, planning now"),
+    EVALUATE("evaluate", "message understood, evaluating agent now"),
+    FOLLOW_HEURISTICS("follow heuristics", "message understood, following heuristics now"),
     
     // this is for their experiment (invasiveExperiment.py)
 	FREEZE_LEARNING("freeze learning", "message understood, policy frozen"),

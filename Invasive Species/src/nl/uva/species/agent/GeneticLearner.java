@@ -54,7 +54,7 @@ public class GeneticLearner extends AbstractLearnerAgent {
     @Override
     public void init(final River river) {
         mRiver = river;
-
+        mCurrentModel = new EnvModel(mRiver, false);
         // mGraphInterface.init();
         // JFrame frame = new JFrame();
         // frame.getContentPane().add(mGraphInterface);

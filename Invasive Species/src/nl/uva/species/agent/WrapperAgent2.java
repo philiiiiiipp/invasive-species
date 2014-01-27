@@ -69,6 +69,7 @@ public class WrapperAgent2 extends AbstractAgent {
         mCostSolver.end(reward);
         mLearner.end(reward);
         mPlanner.end(reward);
+        mHeuristicAgent.end(reward);
     }
 
     @Override
@@ -76,6 +77,7 @@ public class WrapperAgent2 extends AbstractAgent {
         mCostSolver.cleanup();
         mLearner.cleanup();
         mPlanner.cleanup();
+        mHeuristicAgent.cleanup();
     }
 
     @Override

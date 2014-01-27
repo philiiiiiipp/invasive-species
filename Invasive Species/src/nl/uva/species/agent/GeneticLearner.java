@@ -94,7 +94,8 @@ public class GeneticLearner extends AbstractLearnerAgent {
 
         if (mCurrentPhase == Phase.LEARNING) {
             action = getHeuristicNextAction(new RiverState(mRiver, observation), mStepCount,
-                    AMOUNT_NOTHING_ACTION, AMOUNT_ERADICATE_ACTION, AMOUNT_ERADICATE_RESTORE_ACTION);
+                    AMOUNT_NOTHING_ACTION, AMOUNT_ERADICATE_ACTION,
+                    AMOUNT_ERADICATE_RESTORE_ACTION, mCurrentModel);
 
             mModelGenerator.addRiverState(new RiverState(mRiver, observation));
             mModelGenerator.addAction(action);
@@ -114,7 +115,8 @@ public class GeneticLearner extends AbstractLearnerAgent {
 
         if (mCurrentPhase == Phase.LEARNING) {
             action = getHeuristicNextAction(new RiverState(mRiver, observation), mStepCount,
-                    AMOUNT_NOTHING_ACTION, AMOUNT_ERADICATE_ACTION, AMOUNT_ERADICATE_RESTORE_ACTION);
+                    AMOUNT_NOTHING_ACTION, AMOUNT_ERADICATE_ACTION,
+                    AMOUNT_ERADICATE_RESTORE_ACTION, mCurrentModel);
 
             mModelGenerator.addRiverState(new RiverState(mRiver, observation));
             mModelGenerator.addAction(action);

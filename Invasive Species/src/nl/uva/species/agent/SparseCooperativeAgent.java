@@ -25,16 +25,16 @@ import org.rlcommunity.rlglue.codec.types.Observation;
 public class SparseCooperativeAgent extends AbstractAgent {
 
     /** The amount of planning steps to not yield new local states before planning is done */
-    private static final int PLAN_LIMIT = 200;
+    private static final int PLAN_LIMIT = 100;
 
     /** The learning rate alpha as described in (16) by (Kok & Vlassis, 2006) */
-    private static final double LEARNING_RATE = 0.2;
+    private static final double LEARNING_RATE = 0.5;
 
     /** The discount factor gamma as described in (16) by (Kok & Vlassis, 2006) */
     private static final double DISCOUNT = 0.9;
 
     /** Whether or not to print out the actions performed */
-    private static final boolean PRINT_ACTIONS = false;
+    private static final boolean PRINT_ACTIONS = true;
 
     /** The river in which the agent handles */
     private River mRiver;

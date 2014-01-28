@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # Authors: Majid Alkaee Taleghan, Mark Crowley, Thomas Dietterich
 # Invasive Species Project
 # 2012 Oregon State University
@@ -37,7 +38,7 @@ class InvasiveEnvironment(Environment):
         :param fixedStartState (bool), indicates using a random starting state or fixed starting state
         :param discountFactor (float), discount factor
         :param seed (int), seed for random number generator (default=None)
-        """
+        """        
         self.seed = seed
         self.fixedStartState = fixedStartState
         self.discountFactor = discountFactor
@@ -49,15 +50,19 @@ class InvasiveEnvironment(Environment):
         if simulationParameterObj != None:
             self.simulationParameterObj = simulationParameterObj
             self.actionParameterObj = actionParameterObj
-            self.dispertionTable = []
+            self.dispersionTable = []
             self.germinationObj = None
         else:
+            
+# ============================ PARAMETERS =====================================
+            
             #upstream rate
             upStreamRate = 0.1
             #downstream rate
             downStreamRate = 0.5
             #exogenous arrival indicator
             exogenousArrivalIndicator = SimulationParameterClass.ExogenousArrivalOn
+            #exogenousArrivalIndicator = SimulationParameterClass.ExogenousArrivalOff
             #competiton parameter
             competitionFactor = 1
             #there is the same number of
@@ -67,15 +72,40 @@ class InvasiveEnvironment(Environment):
             prodRate = [200, 200]
             #first value is for native and the second one for tamarisk
             deathRate = [0.2, 0.2]
+            
+# ============================ PARAMETERS =====================================
+            
+            print "arrival rates (N, T)"
+            print reachArrivalRates[0]
+            print "arrival probs (N,T)"
+            print reachArrivalProbs[0]
+            print "downstreamrate"
+            print downStreamRate
+            print "prodRate"
+            print prodRate
+            print "deathRate"
+            print deathRate
             graph = InvasiveUtility.createRandomGraph(nbrReaches + 1, balanced=True,randGenerator=self.randGenerator)
 
             self.simulationParameterObj = SimulationParameterClass(nbrReaches, habitatSize, prodRate, deathRate,
                 exogenousArrivalIndicator, reachArrivalRates, reachArrivalProbs, upStreamRate, downStreamRate,
                 competitionFactor, graph)
+
+# ============================ PARAMETERS =====================================
+                
             self.actionParameterObj = ActionParameterClass(costPerTree=0.1, eradicationCost=0.5, restorationCost=0.9,
-                eradicationRate=1, restorationRate=1,
-                costPerReach=1, emptyCost=0, varEradicationCost=0.5, varInvasiveRestorationCost=0.1,
-                varEmptyRestorationCost=0, budget=200)
+                eradicationRate=0.85, restorationRate=0.65,
+                costPerReach=10, emptyCost=0.5, varEradicationCost=0.4, varInvasiveRestorationCost=0.8,
+                varEmptyRestorationCost=0.4, budget=100)
+                
+# ============================ PARAMETERS =====================================
+                
+        testResults = open("dispersionMatrixAnalysis.txt", "a+")
+        testResults.write("\n Number of reaches: "+str(nbrReaches)+"\n");
+        testResults.write(" Number of slots: "+str(habitatSize)+"\n");
+        testResults.write(" Upstram-Rate: "+str(upStreamRate)+"\n");
+        testResults.write(" Downstream-Rate: "+str(downStreamRate)+"\n \n");
+        testResults.close();
 
     def env_init(self):
         """
@@ -86,13 +116,21 @@ class InvasiveEnvironment(Environment):
         adjMatrix = adjacency_matrix(notDirectedG)
 
         edges = self.simulationParameterObj.graph.edges()
+        print edges
         simulationParameterObj = self.simulationParameterObj
         if self.dispersionModel == InvasiveUtility.Levin:
             parameters = InvasiveUtility.calculatePath(notDirectedG,adjMatrix, edges, simulationParameterObj.downStreamRate,
                 simulationParameterObj.upStreamRate)
             C = (1 - simulationParameterObj.upStreamRate * simulationParameterObj.downStreamRate) / (
                 (1 - 2 * simulationParameterObj.upStreamRate) * (1 - simulationParameterObj.downStreamRate))
-            self.dispertionTable = np.dot(1 / C, parameters)
+            # the dispersion table gives the probabilities of seeds spreading
+            self.dispersionTable = np.dot(1 / C, parameters)
+            
+            testResults = open("dispersionMatrixAnalysis.txt", "a+")
+            testResults.write(str(self.dispersionTable)+"\n")
+            testResults.close()
+            
+            # print self.dispersionTable
             self.germinationObj = GerminationDispersionParameterClass(1, 1)
         #calculating the worst case fully invaded rivers cost
         worst_case = repmat(1, 1, self.simulationParameterObj.nbrReaches * self.simulationParameterObj.habitatSize)[0]
@@ -119,8 +157,10 @@ class InvasiveEnvironment(Environment):
         else:
             self.setRandomState()
 
+        print self.state
+
         returnObs = Observation()
-        #        print self.state
+        # print self.state
         returnObs.intArray = map(int, list(self.state))
         return returnObs
 
@@ -137,11 +177,13 @@ class InvasiveEnvironment(Environment):
             returnRO.r = self.Bad_Action_Penalty
             returnRO.o = theObs
             return returnRO
+        # the costs of the state (level of invasion)
         cost_state_unit = InvasiveUtility.get_unit_invaded_reaches(self.state,
             self.simulationParameterObj.habitatSize) * self.actionParameterObj.costPerReach
         stateCost = cost_state_unit + InvasiveUtility.get_invaded_reaches(
             self.state) * self.actionParameterObj.costPerTree
         stateCost = stateCost + InvasiveUtility.get_empty_slots(self.state) * self.actionParameterObj.emptyCost
+        # the cost of the actions
         costAction = InvasiveUtility.get_budget_cost_actions(action, self.state, self.actionParameterObj)
         if costAction > self.actionParameterObj.budget:
             theObs = Observation()
@@ -154,7 +196,7 @@ class InvasiveEnvironment(Environment):
             return returnRO
 
         nextState = simulateNextState(self.state, action, self.simulationParameterObj,
-            self.actionParameterObj, self.dispertionTable, self.germinationObj)
+            self.actionParameterObj, self.dispersionTable, self.germinationObj)
         self.state = nextState
         theObs = Observation()
         theObs.intArray = self.state
@@ -202,7 +244,11 @@ class InvasiveEnvironment(Environment):
     def printState(self):
         print "Agent is at: " + str(self.state)
 
+# ============================ PARAMETERS =====================================
+
 if __name__ == "__main__":
     EnvironmentLoader.loadEnvironment(
         InvasiveEnvironment(simulationParameterObj=None, actionParameterObj=None, Bad_Action_Penalty=-10000,fixedStartState=False, nbrReaches=7,
             habitatSize=4, seed=1))
+            
+# ============================ PARAMETERS =====================================

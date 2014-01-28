@@ -110,6 +110,7 @@ public class GeneticLearner extends AbstractLearnerAgent {
 
     @Override
     public Action step(final double reward, final Observation observation) {
+
         RiverState currentState = new RiverState(mRiver, observation);
         Action action = null;
 
@@ -153,14 +154,14 @@ public class GeneticLearner extends AbstractLearnerAgent {
     @Override
     public void message(final Messages message) {
 
-        if (message.equals(Messages.FREEZE_LEARNING)) {
+        if (message.equals(Messages.FREEZE_LEARNING) || message.equals(Messages.PLAN)) {
             mCurrentPhase = Phase.PLANNING;
             mCurrentModel = mModelGenerator.getBestModel(mRiver);
             mEpisodeCount = 0;
             System.out.print("Planning step: ");
         }
 
-        if (message.equals(Messages.UNFREEZE_LEARNING)) {
+        if (message.equals(Messages.UNFREEZE_LEARNING) || message.equals(Messages.LEARN_MODEL)) {
             mCurrentPhase = Phase.LEARNING;
             mEpisodeCount = 0;
             System.out.print("Learning step: ");

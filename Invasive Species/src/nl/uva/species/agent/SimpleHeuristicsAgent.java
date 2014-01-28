@@ -28,7 +28,7 @@ public class SimpleHeuristicsAgent extends AbstractAgent {
         double budgetLeft = mRiver.getBudget();
 
         final Action action = new Action();
-        action.intArray = new int[7];
+        action.intArray = new int[mRiver.getNumReaches()];
 
         for (final Reach reach : state.getReaches()) {
             final int index = reach.getIndex();

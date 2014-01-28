@@ -43,7 +43,7 @@ public class EnvModel {
     private double mCostHabitatTamarisk = 0.1;
 
     /** The cost per empty habitat */
-    private double mCostHabitatEmpty = 0.00;
+    private double mCostHabitatEmpty = 0.5;
 
     /** The consistent cost of one eradication */
     private double mCostEradicate = 0.5;
@@ -52,13 +52,13 @@ public class EnvModel {
     private double mCostRestorate = 0.9;
 
     /** The variable cost for each Tamarisk plant attempted to eradicate */
-    private double mCostVariableEradicate = 0.5;
+    private double mCostVariableEradicate = 0.4;
 
     /** The variable cost for each native plant attempted to eradicate */
-    private double mCostVariableRestorate = 0.0;
+    private double mCostVariableRestorate = 0.4;
 
     /** The variable cost for each Tamarisk plant attempted to eradicate and restore */
-    private double mCostVariableEradicateRestorate = 0.1;
+    private double mCostVariableEradicateRestorate = 0.8;
 
     /** Default value for each reach that there is exogenous germination */
     private final double mDefaultExoToEndoRatio = 0.7;
@@ -76,16 +76,16 @@ public class EnvModel {
     private double mEndoTamarisk = 0.6;
 
     /** The factor affecting the chance that trees spread to children */
-    private double mUpstreamRate = 0.1;
+    private double mUpstreamRate = 0.5;
 
     /** The factor affecting the chance that trees spread to parents */
     private double mDownstreamRate = 0.1;
 
     /** The chance that eradication succeeds */
-    private double mEradicationRate = 1.0;
+    private double mEradicationRate = 0.85;
 
     /** The chance that restoration succeeds */
-    private double mRestorationRate = 1.0;
+    private double mRestorationRate = 0.65;
 
     /** The chance that a Tamarisk plant randomly dies */
     private double mDeathRateTamarisk = 0.2;

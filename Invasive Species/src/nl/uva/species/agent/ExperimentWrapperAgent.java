@@ -12,7 +12,7 @@ import org.rlcommunity.rlglue.codec.util.AgentLoader;
  * This wrapper can be used with ourExperiment.py
  * 
  */
-public class WrapperAgent2 extends AbstractAgent {
+public class ExperimentWrapperAgent extends AbstractAgent {
 
     private River mRiver;
 
@@ -30,6 +30,7 @@ public class WrapperAgent2 extends AbstractAgent {
 
     @Override
     public void init(final River river) {
+        java.awt.Toolkit.getDefaultToolkit().beep();
         mRiver = river;
         mCostSolver.init(mRiver);
         mLearner.init(mRiver);
@@ -66,6 +67,7 @@ public class WrapperAgent2 extends AbstractAgent {
 
     @Override
     public void end(final double reward) {
+        java.awt.Toolkit.getDefaultToolkit().beep();
         mCostSolver.end(reward);
         mLearner.end(reward);
         mPlanner.end(reward);
@@ -101,7 +103,7 @@ public class WrapperAgent2 extends AbstractAgent {
      * @param args
      */
     public static void main(final String[] args) {
-        AgentLoader theLoader = new AgentLoader(new WrapperAgent2());
+        AgentLoader theLoader = new AgentLoader(new ExperimentWrapperAgent());
         theLoader.run();
     }
 }

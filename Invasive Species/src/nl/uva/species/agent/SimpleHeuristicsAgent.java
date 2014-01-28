@@ -12,12 +12,13 @@ import org.rlcommunity.rlglue.codec.types.Observation;
 import org.rlcommunity.rlglue.codec.util.AgentLoader;
 
 public class SimpleHeuristicsAgent extends AbstractAgent {
-    
-    River mRiver;
-    EnvModel mModel;
+
+    private River mRiver;
+
+    private EnvModel mModel;
 
     @Override
-    public void init(River river) {
+    public void init(final River river) {
         mRiver = river;
         mModel = new EnvModel(river);
     }
@@ -32,7 +33,8 @@ public class SimpleHeuristicsAgent extends AbstractAgent {
 
         for (final Reach reach : state.getReaches()) {
             final int index = reach.getIndex();
-            final double cost = Math.abs(mModel.getSingleActionReward(reach, Utilities.ACTION_ERADICATE_RESTORE));
+            final double cost = Math.abs(mModel.getSingleActionReward(reach,
+                    Utilities.ACTION_ERADICATE_RESTORE));
             if (cost <= budgetLeft) {
                 action.intArray[index] = Utilities.ACTION_ERADICATE_RESTORE;
                 budgetLeft -= cost;
@@ -40,7 +42,6 @@ public class SimpleHeuristicsAgent extends AbstractAgent {
                 action.intArray[index] = Utilities.ACTION_NOTHING;
             }
         }
-
         return action;
     }
 
@@ -56,7 +57,7 @@ public class SimpleHeuristicsAgent extends AbstractAgent {
     public void cleanup() {}
 
     @Override
-    public void message(Messages message) {}
+    public void message(final Messages message) {}
 
     /**
      * Load our agent with the AgentLoader and automatically connect to the rl_glue server.
